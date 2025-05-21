@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 # Carregar variáveis do arquivo .env
 load_dotenv()
 
-# Conexao sefura ao banco MySQL
 def verbinden():
     try:
         verbindung = mysql.connector.connect(
@@ -20,5 +19,14 @@ def verbinden():
         print(f"❌ Fehler bei der Verbindung zur Datenbank: {fehler}")
         return None
 
+def verbindung_schliessen(verbindung):
+    """Fecha a conexão com o banco de dados de forma segura."""
+    if verbindung and verbindung.is_connected():
+        verbindung.close()
+        print("✅ Datenbankverbindung sicher geschlossen.")
+
 if __name__ == "__main__":
-    verbinden()
+    conn = verbinden()
+    if conn:
+        verbindung_schliessen(conn)
+

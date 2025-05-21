@@ -1,18 +1,14 @@
-import mysql.connector
-import os
-from dotenv import load_dotenv
+from db import verbinden, verbindung_schliessen
 from utils.security import passwort_hashen
 
-load_dotenv()
-
 def benutzer_registrieren(name, email, passwort):
+    verbindung = None
+    cursor = None
     try:
-        verbindung = mysql.connector.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME")
-        )
+        verbindung = verbinden()
+        if not verbindung:
+            return False
+            
         cursor = verbindung.cursor()
         passwort_hash = passwort_hashen(passwort)
         sql = "INSERT INTO benutzer (name, email, passwort) VALUES (%s, %s, %s)"
@@ -20,6 +16,11 @@ def benutzer_registrieren(name, email, passwort):
         cursor.execute(sql, werte)
         verbindung.commit()
         return True
-    except mysql.connector.Error as fehler:
+    except Exception as fehler:
         print(f"❌ Fehler beim Registrieren des Benutzers: {fehler}")
         return False
+    finally:
+        if cursor:
+            cursor.close()
+        if verbindung:
+            verbindung_schliessen(verbindung)
