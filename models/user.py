@@ -22,7 +22,7 @@ def benutzer_registrieren(name, email, passwort):
         verbindung.commit()
         return True
     except Exception as fehler:
-        print(f"❌ Fehler beim Registrieren des Benutzers: {fehler}")
+        print(f"Fehler beim Registrieren des Benutzers: {fehler}")
         return False
     finally:
         if cursor:
@@ -52,7 +52,7 @@ def benutzer_anmelden(email, passwort):
 
         return None # Credenciais inválidas
     except Exception as fehler:
-        print(f"❌ Fehler beim Anmelden des Benutzers: {fehler}")
+        print(f" Fehler beim Anmelden des Benutzers: {fehler}")
         return None
     finally:
         if cursor:

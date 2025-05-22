@@ -1,0 +1,10 @@
+{
+  "titel": "Schnitzel mit Kartoffelsalat",
+  "zutaten": [
+    {"name": "Schweinefleisch", "menge": "500g"},
+    {"name": "Kartoffeln", "menge": "1kg"},
+    {"name": "Paniermehl", "menge": "200g"},
+    {"name": "Eier", "menge": "2"}
+  ],
+  "zubereitung": "Fleisch klopfen, panieren und braten. Kartoffeln kochen und Salat zubereiten."
+}

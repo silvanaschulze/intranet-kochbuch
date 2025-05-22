@@ -13,17 +13,17 @@ def verbinden():
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME")
         )
-        print("✅ Verbindung zur Datenbank erfolgreich hergestellt.")
+        print("Verbindung zur Datenbank erfolgreich hergestellt.")
         return verbindung
     except mysql.connector.Error as fehler:
-        print(f"❌ Fehler bei der Verbindung zur Datenbank: {fehler}")
+        print(f" Fehler bei der Verbindung zur Datenbank: {fehler}")
         return None
 
 def verbindung_schliessen(verbindung):
     """Fecha a conexão com o banco de dados de forma segura."""
     if verbindung and verbindung.is_connected():
         verbindung.close()
-        print("✅ Datenbankverbindung sicher geschlossen.")
+        print("Datenbankverbindung sicher geschlossen.")
 
 if __name__ == "__main__":
     conn = verbinden()

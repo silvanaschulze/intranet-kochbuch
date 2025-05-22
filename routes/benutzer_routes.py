@@ -1,7 +1,8 @@
 from flask import Blueprint, request, jsonify
 from models.user import benutzer_registrieren, benutzer_anmelden
 from utils.validators import email_validieren, passwort_validieren
-from utils.token import token_generieren
+from utils.token import token_generieren, token_erforderlich  # Adicione token_erforderlich aqui
+
 
 benutzer_bp = Blueprint('benutzer', __name__)
 
@@ -48,3 +49,16 @@ def login():
         return jsonify({"nachricht": "Login erfolgreich", "token": token}), 200
     else:
         return jsonify({"fehler": "Ungültige E-Mail oder Passwort."}), 401
+
+@benutzer_bp.route("/profil", methods=["GET"])
+@token_erforderlich
+def profil(token_daten):
+    """
+    Rota protegida que requer autenticação JWT.
+    O decorador token_erforderlich adiciona token_daten aos argumentos da função.
+    """
+    return jsonify({
+        "nachricht": "Zugriff erlaubt",
+        "benutzer_id": token_daten["benutzer_id"],
+        "email": token_daten["email"]
+    })
