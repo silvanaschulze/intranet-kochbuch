@@ -5,7 +5,7 @@ import api from './api';
 // Alle Rezepte abrufen (mit Paginierung)
 export const getRecipes = async (page = 1, limit = 10, search = '') => {
   try {
-    const response = await api.get('/rezepte', {
+    const response = await api.get('/api/rezepte', {
       params: { page, limit, search }
     });
     return response.data;
@@ -17,7 +17,7 @@ export const getRecipes = async (page = 1, limit = 10, search = '') => {
 // Ein einzelnes Rezept abrufen
 export const getRecipe = async (id) => {
   try {
-    const response = await api.get(`/rezepte/${id}`);
+    const response = await api.get(`/api/rezepte/${id}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -47,7 +47,7 @@ export const createRecipe = async (recipeData) => {
       formData.append('bild', recipeData.bild);
     }
     
-    const response = await api.post('/rezepte', formData, {
+    const response = await api.post('/api/rezepte', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -82,7 +82,7 @@ export const updateRecipe = async (id, recipeData) => {
       formData.append('bild', recipeData.bild);
     }
     
-    const response = await api.put(`/rezepte/${id}`, formData, {
+    const response = await api.put(`/api/rezepte/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -97,7 +97,7 @@ export const updateRecipe = async (id, recipeData) => {
 // Rezept löschen
 export const deleteRecipe = async (id) => {
   try {
-    const response = await api.delete(`/rezepte/${id}`);
+    const response = await api.delete(`/api/rezepte/${id}`);
     return response.data;
   } catch (error) {
     throw error;
@@ -107,7 +107,7 @@ export const deleteRecipe = async (id) => {
 // Rezepte suchen
 export const searchRecipes = async (searchTerm) => {
   try {
-    const response = await api.get(`/rezepte/suche?q=${searchTerm}`);
+    const response = await api.get(`/api/rezepte/suche?q=${searchTerm}`);
     return response.data;
   } catch (error) {
     throw error;

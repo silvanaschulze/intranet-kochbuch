@@ -5,6 +5,8 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import Layout from './components/Layout/Layout';
 import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
+import Register from './pages/Register';
+import CreateRecipe from './pages/CreateRecipe';
 
 // Páginas
 import RecipeListPage from './pages/RecipeList';
@@ -24,8 +26,10 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/receitas" element={<RecipeListPage />} />
+            <Route path="/rezepte" element={<RecipeListPage />} />
+            <Route path="/rezept-erstellen" element={<CreateRecipe />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </Layout>
       </Router>

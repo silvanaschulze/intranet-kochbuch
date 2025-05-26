@@ -1,6 +1,6 @@
 // src/pages/Login.jsx
 
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { Form, Button, Card, Alert, Container, Row, Col } from 'react-bootstrap';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -18,21 +18,23 @@ const LoginSchema = Yup.object().shape({
 
 const Login = () => {
   // Auth-Kontext verwenden
-  const { login } = useContext(AuthContext);
+  const { login, error, user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [error, setError] = useState('');
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   // Formular absenden
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       const success = await login(values.email, values.password);
       if (success) {
-        navigate('/receitas'); // Zur Rezeptliste navigieren
-      } else {
-        setError('Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
+       setLoginSuccess(true);
+        // Weiterleitung zur Startseite nach 2 Sekunden
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
       }
     } catch (err) {
-      setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+      console.error('Fehler beim Anmelden:', err);
     } finally {
       setSubmitting(false);
     }
@@ -46,7 +48,11 @@ const Login = () => {
             <Card.Header as="h4" className="text-center">Anmelden</Card.Header>
             <Card.Body>
               {error && <Alert variant="danger">{error}</Alert>}
-              
+              {loginSuccess && (
+                <Alert variant="success">
+                  Willkommen zurück, {user?.name || 'Benutzer'}! Sie werden weitergeleitet...
+                </Alert>
+              )}
               <Formik
                 initialValues={{ email: '', password: '' }}
                 validationSchema={LoginSchema}
@@ -75,7 +81,7 @@ const Login = () => {
                       <Form.Control.Feedback type="invalid">
                         {errors.email}
                       </Form.Control.Feedback>
-                    </Form.Group>
+                    </Form.Group> 
 
                     <Form.Group className="mb-3">
                       <Form.Label>Passwort</Form.Label>
@@ -98,7 +104,7 @@ const Login = () => {
                       className="w-100" 
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Anmeldung...' : 'Anmelden'}
+                      {isSubmitting ? 'Anmeldung läuft...' : 'Anmelden'}
                     </Button>
                   </Form>
                 )}
