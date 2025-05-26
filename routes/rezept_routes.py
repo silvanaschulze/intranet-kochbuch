@@ -330,39 +330,46 @@ def rezept_loeschen_route(token_daten, rezept_id):
         return jsonify({'fehler': 'Interner Serverfehler'}), 500
 
 @rezept_bp.route('/suche', methods=['GET'])
-def rezepte_suchen_route():
+def rezepte_suche_route():
     """
-    Sucht nach Rezepten, die den Suchbegriff enthalten
+    Sucht nach Rezepten basierend auf einem Suchbegriff
     
     Query-Parameter:
-    - suchbegriff: Der Suchbegriff
+    - q: Suchbegriff (Titel des Rezepts)
     - limit: Maximale Anzahl der zurückzugebenden Rezepte (Standard: 10)
     - offset: Anzahl der zu überspringenden Rezepte (Standard: 0)
     """
     try:
-        # Parameter aus der Anfrage extrahieren
-        suchbegriff = request.args.get('suchbegriff', default='', type=str)
-        limit = request.args.get('limit', default=10, type=int)
-        offset = request.args.get('offset', default=0, type=int)
+        # Suchbegriff aus der Anfrage extrahieren
+        suchbegriff = request.args.get('q')
         
+        # Suchbegriff ist erforderlich
         if not suchbegriff:
             return jsonify({'fehler': 'Suchbegriff ist erforderlich'}), 400
+
+        #Kategorie-ID extrahieren, falss vorhanden
+        kategorie_id = request.args.get('kategorie_id', type=int)
+            
+
+        # Paginierungsparameter
+        limit = request.args.get('limit', 10, type=int)
+        offset = request.args.get('offset', 0, type=int)
         
         # Rezepte suchen
-        rezepte = rezepte_suchen(suchbegriff, limit, offset)
-        
-        # Metadaten für Paginierung
-        metadaten = {
-            'anzahl': len(rezepte),
-            'limit': limit,
-            'offset': offset,
-            'suchbegriff': suchbegriff
-        }
+        rezepte, anzahl = rezepte_suchen(suchbegriff, limit, offset, kategorie_id)
         
         return jsonify({
-            'rezepte': rezepte,
-            'meta': metadaten
-        }), 200
+              'rezepte': rezepte,
+            'meta': {
+                'anzahl': anzahl,
+                'limit': limit,
+                'offset': offset,
+                'suchbegriff': suchbegriff,
+                'kategorie_id': kategorie_id
+            }
+        })
     except Exception as fehler:
-        print(f"Fehler bei der Suche nach Rezepten: {fehler}")
+        print(f"Fehler bei der Rezeptsuche: {fehler}")
         return jsonify({'fehler': 'Interner Serverfehler'}), 500
+
+     

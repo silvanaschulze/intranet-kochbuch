@@ -280,53 +280,72 @@ def rezept_loeschen(rezept_id, benutzer_id=None):
         if verbindung:
             verbindung_schliessen(verbindung)
 
-def rezepte_suchen(suchbegriff, limit=10, offset=0):
+def rezepte_suchen(suchbegriff, limit=10, offset=0,  kategorie_id=None):
     """
-    Sucht nach Rezepten, die den Suchbegriff im Titel oder in den Zutaten enthalten.
+    Sucht nach Rezepten basierend auf einem Suchbegriff und optional einer Kategorie
     
     Args:
-        suchbegriff (str): Der Suchbegriff
+        suchbegriff (str): Suchbegriff für den Titel
         limit (int, optional): Maximale Anzahl der zurückzugebenden Rezepte
-        offset (int, optional): Anzahl der zu überspringenden Rezepte (für Paginierung)
+        offset (int, optional): Anzahl der zu überspringenden Rezepte
+        kategorie_id (int, optional): ID der Kategorie, nach der gefiltert werden soll
         
     Returns:
-        list: Liste von Rezept-Dictionaries, die dem Suchbegriff entsprechen
+        tuple: (Liste der gefundenen Rezepte, Gesamtanzahl der gefundenen Rezept
     """
     verbindung = None
     cursor = None
     try:
         verbindung = verbinden()
         if not verbindung:
-            return []
+            return [], 0
             
         cursor = verbindung.cursor(dictionary=True)
         
-        # Suchbegriff für LIKE-Abfrage vorbereiten
-        such_param = f"%{suchbegriff}%"
-        
+        # Basis-SQL-Abfrage
+        count_sql = "SELECT COUNT(*) as anzahl FROM rezept WHERE titel LIKE %s"
         sql = """
         SELECT r.*, u.name as benutzer_name
         FROM rezept r
-        JOIN user u ON r.benutzer_id = u.id
-        WHERE r.titel LIKE %s OR r.zutaten LIKE %s
-        ORDER BY r.erstellungsdatum DESC
-        LIMIT %s OFFSET %s
+        LEFT JOIN user u ON r.benutzer_id = u.id
+        WHERE r.titel LIKE %s
         """
         
-        cursor.execute(sql, (such_param, such_param, limit, offset))
+        # Parameter für die Suche
+        such_param = f"%{suchbegriff}%"
+        params = [such_param]
+        
+        # Wenn eine Kategorie angegeben ist, füge sie zur Abfrage hinzu
+        if kategorie_id:
+            sql += " AND r.kategorie_id = %s"
+            count_sql += " AND kategorie_id = %s"
+            params.append(kategorie_id)
+        
+        # Sortierung und Paginierung
+        sql += " ORDER BY r.erstellungsdatum DESC LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
+        
+        # Gesamtanzahl der Ergebnisse ermitteln
+        cursor.execute(count_sql, params[:-2])  # Ohne limit und offset
+        anzahl = cursor.fetchone()['anzahl']
+        
+        # Rezepte abrufen
+        cursor.execute(sql, params)
         rezepte = cursor.fetchall()
         
-        # Zutaten für jedes Rezept von JSON-String in Liste umwandeln
+        # Zutaten für jedes Rezept parsen
         for rezept in rezepte:
-            try:
-                rezept['zutaten'] = json.loads(rezept['zutaten'])
-            except:
-                pass
-                
-        return rezepte
+            if rezept['zutaten']:
+                try:
+                    rezept['zutaten'] = json.loads(rezept['zutaten'])
+                except:
+                    rezept['zutaten'] = []
+        
+        return rezepte, anzahl
+        
     except Exception as fehler:
-        print(f" Fehler bei der Suche nach Rezepten: {fehler}")
-        return []
+        print(f"Fehler beim Suchen von Rezepten: {fehler}")
+        return [], 0
     finally:
         if cursor:
             cursor.close()
