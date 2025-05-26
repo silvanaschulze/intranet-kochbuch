@@ -142,7 +142,12 @@ def rezept_erstellen_route(token_daten):
     """
     try:
         # Daten aus der Anfrage extrahieren
-        daten  = request.get_json()
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            # Formular-Daten verarbeiten
+            daten = request.form.to_dict()
+        else:
+            # JSON-Daten verarbeiten
+            daten = request.get_json()
 
         
         # Pflichtfelder überprüfen
@@ -166,10 +171,9 @@ def rezept_erstellen_route(token_daten):
         bild_pfad = None
         if 'bild' in request.files:
             bild = request.files['bild']
-            bild_pfad, fehler = bild_speichern(bild)
-            if fehler:
-                return jsonify({'fehler': fehler}), 400
-
+            bild_pfad = bild_speichern(bild)
+            if bild and not bild_pfad:
+                return jsonify({'fehler': 'Ungültiger Dateityp für Bild'}), 400
         
         # Kategorie-ID extrahieren, falls vorhanden
         kategorie_id = daten.get('kategorie_id')
