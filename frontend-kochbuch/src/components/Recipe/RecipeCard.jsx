@@ -14,7 +14,7 @@ import PropTypes from 'prop-types';
  * 
  * @param {Object} props - Komponenteneigenschaften
  * @param {Object} props.recipe - Das anzuzeigende Rezept
- * @param {string} props.recipe.id - ID des Rezepts
+ * @param {string|number} props.recipe.id - ID des Rezepts
  * @param {string} props.recipe.titel - Titel des Rezepts
  * @param {string} props.recipe.bild_pfad - URL zum Bild des Rezepts
  * @param {string} props.recipe.zubereitungszeit - Zubereitungszeit des Rezepts
@@ -26,9 +26,9 @@ const RecipeCard = ({ recipe }) => {
   const {
     id,
     titel: title,
-    bild_pfad: image,
-    zubereitungszeit: prepTime,
-    schwierigkeitsgrad: difficulty,
+    bild_pfad: image = null,
+    zubereitungszeit: prepTime = 'Nicht angegeben',
+    schwierigkeitsgrad: difficulty = 'Nicht angegeben',
     bewertung: rating = 0
   } = recipe;
 
@@ -36,7 +36,7 @@ const RecipeCard = ({ recipe }) => {
   const API_URL = 'http://192.168.64.3:5000';
   const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200?text=Kein+Bild+verfügbar';
   
-  // Construir URL da imagem
+  // Construir URL da imagem e adicionar tratamento de erro
   const imageUrl = image 
     ? image.startsWith('http') 
       ? image 
@@ -78,13 +78,17 @@ const RecipeCard = ({ recipe }) => {
 
 RecipeCard.propTypes = {
   recipe: PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number
+    ]).isRequired,
     titel: PropTypes.string.isRequired,
-    bild_pfad: PropTypes.string.isRequired,
-    zubereitungszeit: PropTypes.string.isRequired,
-    schwierigkeitsgrad: PropTypes.string.isRequired,
+    bild_pfad: PropTypes.string,
+    zubereitungszeit: PropTypes.string,
+    schwierigkeitsgrad: PropTypes.string,
     bewertung: PropTypes.number
   }).isRequired
 };
 
 export default RecipeCard;
+

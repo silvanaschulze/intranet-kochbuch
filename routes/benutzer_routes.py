@@ -68,6 +68,7 @@ def login():
     @return {Object} response
     @return {string} response.nachricht - Erfolgsmeldung
     @return {string} response.token - JWT-Token bei erfolgreicher Anmeldung
+    @return {Object} response.benutzer - Benutzerdaten
     @return {string} [response.fehler] - Fehlermeldung bei Misserfolg
     
     @throws {400} - Bei fehlenden Anmeldedaten
@@ -83,8 +84,18 @@ def login():
     benutzer = benutzer_anmelden(email, passwort)
 
     if benutzer:
+        # Remove o hash da senha antes de enviar
+        benutzer_daten = {
+            'id': benutzer['id'],
+            'name': benutzer['name'],
+            'email': benutzer['email']
+        }
         token = token_generieren(benutzer['id'], benutzer['email'])
-        return jsonify({"nachricht": "Login erfolgreich", "token": token}), 200
+        return jsonify({
+            "nachricht": "Login erfolgreich", 
+            "token": token,
+            "benutzer": benutzer_daten
+        }), 200
     else:
         return jsonify({"fehler": "Ungültige E-Mail oder Passwort."}), 401
 

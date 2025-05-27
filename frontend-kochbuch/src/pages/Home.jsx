@@ -1,47 +1,44 @@
 /**
  * @fileoverview Startseite der Anwendung
- * @component Home
+ * @component HomePage
  */
 
 import React from 'react';
-import { Container, Row, Col, Button } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Container, Button } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
 /**
- * Home Komponente
- * Zeigt die Startseite mit Willkommensnachricht und Aktionsschaltflächen an
- * @returns {JSX.Element} Die gerenderte Home Komponente
+ * HomePage Komponente
+ * Zeigt die Startseite der Anwendung an
+ * @returns {JSX.Element} Die gerenderte HomePage Komponente
  */
-const Home = () => {
-  const { isAuthenticated } = useAuth();
+const HomePage = () => {
+  const navigate = useNavigate();
 
   return (
-    <Container className="py-5">
-      <Row className="justify-content-center text-center">
-        <Col md={8}>
-          <h1 className="display-4 mb-4">Willkommen beim Intranet-Kochbuch</h1>
-          <p className="lead mb-4">
-            Entdecken Sie eine Vielzahl von köstlichen Rezepten, teilen Sie Ihre eigenen Kreationen und lassen Sie sich von unserer Gemeinschaft inspirieren.
-          </p>
-          <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            <Button as={Link} to="/rezepte" variant="primary" size="lg" className="px-4 me-sm-3">
-              Rezepte entdecken
-            </Button>
-            {isAuthenticated ? (
-              <Button as={Link} to="/rezept-erstellen" variant="outline-primary" size="lg" className="px-4">
-                Rezept erstellen
-              </Button>
-            ) : (
-              <Button as={Link} to="/register" variant="outline-primary" size="lg" className="px-4">
-                Jetzt registrieren
-              </Button>
-            )}
-          </div>
-        </Col>
-      </Row>
+    <Container className="py-5 text-center">
+      <h1 className="display-4 mb-4">Willkommen beim Intranet-Kochbuch</h1>
+      <p className="lead mb-4">
+        Entdecken Sie die kulinarische Vielfalt unserer Gemeinschaft
+      </p>
+      <div className="d-grid gap-3 d-sm-flex justify-content-sm-center">
+        <Button 
+          variant="primary" 
+          size="lg"
+          onClick={() => navigate('/rezepte')}
+        >
+          Rezepte entdecken
+        </Button>
+        <Button 
+          variant="outline-primary" 
+          size="lg"
+          onClick={() => navigate('/rezept-erstellen')}
+        >
+          Rezept erstellen
+        </Button>
+      </div>
     </Container>
   );
 };
 
-export default Home;
+export default HomePage;

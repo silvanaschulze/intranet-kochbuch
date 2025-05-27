@@ -19,7 +19,16 @@ app = Flask(__name__)
 # Configuração CORS mais específica
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+        "origins": [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
+            "http://192.168.64.1:3000",
+            "http://192.168.64.1:5173",
+            "http://192.168.64.3:3000",
+            "http://192.168.64.3:5173"
+        ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type", "Authorization"],
@@ -28,6 +37,7 @@ CORS(app, resources={
 })
 
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads')
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Registrar blueprint
 app.register_blueprint(benutzer_bp, url_prefix='/api/benutzer')

@@ -10,22 +10,14 @@ import Layout from './components/Layout/Layout';
 import { AuthProvider } from './context/AuthContext';
 
 // Seitenkomponenten importieren
+import HomePage from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import RecipeList from './pages/RecipeList';
+import RecipeListPage from './pages/RecipeListPage';
 import RecipeDetail from './pages/RecipeDetail';
-import CreateRecipe from './pages/CreateRecipe';
-
-/**
- * Startseite Komponente
- * @returns {JSX.Element} Die gerenderte Home Komponente
- */
-const Home = () => (
-  <div className="text-center py-5">
-    <h1>Willkommen beim Intranet-Kochbuch</h1>
-    <p className="lead">Entdecken Sie die kulinarische Vielfalt unserer Gemeinschaft</p>
-  </div>
-);
+import CreateRecipes from './pages/CreateRecipes';
+import Profile from './pages/Profile';
+import MyRecipes from './components/Recipe/MyRecipes';
 
 /**
  * Hauptkomponente der Anwendung
@@ -34,20 +26,22 @@ const Home = () => (
  */
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Layout>
           <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/rezepte" element={<RecipeList />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/rezepte" element={<RecipeListPage />} />
             <Route path="/rezepte/:id" element={<RecipeDetail />} />
-            <Route path="/rezept-erstellen" element={<CreateRecipe />} />
+            <Route path="/rezept-erstellen" element={<CreateRecipes />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/profil" element={<Profile />} />
+            <Route path="/meine-rezepte" element={<MyRecipes />} />
           </Routes>
         </Layout>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

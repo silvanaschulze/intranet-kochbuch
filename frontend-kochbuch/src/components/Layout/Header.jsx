@@ -6,7 +6,7 @@
 import React, { useContext, useEffect } from 'react';
 import { Navbar, Container, Nav, NavDropdown, Button } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * Header-Komponente mit Navigationsmenü
@@ -14,7 +14,7 @@ import { AuthContext } from '../../context/AuthContext';
  * @returns {JSX.Element} Die gerenderte Header-Komponente
  */
 const Header = () => {
-  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 

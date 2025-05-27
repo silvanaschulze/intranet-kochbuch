@@ -160,3 +160,17 @@ export const searchRecipes = async (searchTerm) => {
     throw error;
   }
 };
+
+/**
+ * Ruft die Rezepte des eingeloggten Benutzers ab
+ * @async
+ * @returns {Promise<Rezept[]>} Liste der Rezepte des Benutzers
+ */
+export const getUserRecipes = async () => {
+  try {
+    const response = await api.get('/api/rezepte/benutzer');
+    return response.data.rezepte || [];
+  } catch (error) {
+    throw error;
+  }
+};

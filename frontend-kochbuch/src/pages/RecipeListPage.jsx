@@ -3,7 +3,7 @@
  * @component RecipeListPage
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Form, Button, Alert, Pagination } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { getRecipes, searchRecipes } from '../services/recipeService';
@@ -36,17 +36,10 @@ const RecipeListPage = () => {
   const [limit] = useState(9); // Anzahl der Rezepte pro Seite
 
   /**
-   * Lädt die Rezepte beim ersten Render und bei Seitenänderungen
-   */
-  useEffect(() => {
-    loadRecipes();
-  }, [page]);
-
-  /**
    * Lädt die Rezepte von der API
    * @async
    */
-  const loadRecipes = async () => {
+  const loadRecipes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -66,7 +59,14 @@ const RecipeListPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit]);
+
+  /**
+   * Lädt die Rezepte beim ersten Render und bei Seitenänderungen
+   */
+  useEffect(() => {
+    loadRecipes();
+  }, [loadRecipes]);
 
   /**
    * Verarbeitet die Rezeptsuche
@@ -100,7 +100,20 @@ const RecipeListPage = () => {
    * @returns {JSX.Element} Die Paginierungskomponente
    */
   const renderPagination = () => {
-    if (totalPages <= 1) return null;
+    if (!totalPages || totalPages <= 1) return null;
+
+    const pages = [];
+    for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+      pages.push(
+        <Pagination.Item
+          key={i}
+          active={i === page}
+          onClick={() => setPage(i)}
+        >
+          {i}
+        </Pagination.Item>
+      );
+    }
 
     return (
       <Pagination className="justify-content-center mt-4">
@@ -109,22 +122,14 @@ const RecipeListPage = () => {
           disabled={page === 1}
         />
         <Pagination.Prev
-          onClick={() => setPage(p => p - 1)}
+          onClick={() => setPage(p => Math.max(1, p - 1))}
           disabled={page === 1}
         />
         
-        {[...Array(totalPages)].map((_, index) => (
-          <Pagination.Item
-            key={index + 1}
-            active={index + 1 === page}
-            onClick={() => setPage(index + 1)}
-          >
-            {index + 1}
-          </Pagination.Item>
-        ))}
+        {pages}
         
         <Pagination.Next
-          onClick={() => setPage(p => p + 1)}
+          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
           disabled={page === totalPages}
         />
         <Pagination.Last
@@ -184,4 +189,4 @@ const RecipeListPage = () => {
   );
 };
 
-export default RecipeListPage;
+export default RecipeListPage; 

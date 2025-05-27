@@ -165,11 +165,14 @@ const RecipeList = ({ recipes, loading = false }) => {
 RecipeList.propTypes = {
   recipes: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number
+      ]).isRequired,
       titel: PropTypes.string.isRequired,
       bild_pfad: PropTypes.string,
-      zubereitungszeit: PropTypes.string.isRequired,
-      schwierigkeitsgrad: PropTypes.string.isRequired,
+      zubereitungszeit: PropTypes.string,
+      schwierigkeitsgrad: PropTypes.string,
       bewertung: PropTypes.number
     })
   ).isRequired,

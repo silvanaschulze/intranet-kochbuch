@@ -3,12 +3,12 @@
  * @component Login
  */
 
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { Form, Button, Card, Alert, Container, Row, Col } from 'react-bootstrap';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 // Login-Schema für Formularvalidierung
 const LoginSchema = Yup.object().shape({
@@ -26,23 +26,33 @@ const LoginSchema = Yup.object().shape({
  */
 const Login = () => {
   // Auth-Kontext verwenden
-  const { login, error, user } = useContext(AuthContext);
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   // Formular absenden
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
-      const success = await login(values.email, values.password);
-      if (success) {
-       setLoginSuccess(true);
+      setLoginError(''); // Limpa erros anteriores
+      const response = await login(values.email, values.password);
+      console.log('Login response:', response);
+      
+      if (response && response.token) {
+        setLoginSuccess(true);
         // Weiterleitung zur Startseite nach 2 Sekunden
         setTimeout(() => {
-          navigate('/');
+          navigate('/rezepte');
         }, 2000);
+      } else {
+        setLoginError('Login fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten.');
       }
     } catch (err) {
       console.error('Fehler beim Anmelden:', err);
+      setLoginError(
+        err.response?.data?.fehler || 
+        'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -55,10 +65,10 @@ const Login = () => {
           <Card>
             <Card.Header as="h4" className="text-center">Anmelden</Card.Header>
             <Card.Body>
-              {error && <Alert variant="danger">{error}</Alert>}
+              {loginError && <Alert variant="danger">{loginError}</Alert>}
               {loginSuccess && (
                 <Alert variant="success">
-                  Willkommen zurück, {user?.name || 'Benutzer'}! Sie werden weitergeleitet...
+                  Login erfolgreich! Sie werden weitergeleitet...
                 </Alert>
               )}
               <Formik

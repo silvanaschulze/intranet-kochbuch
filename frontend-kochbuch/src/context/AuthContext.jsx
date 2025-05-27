@@ -50,18 +50,49 @@ export const useAuth = () => {
  * @returns {JSX.Element} Die gerenderte AuthProvider Komponente
  */
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+        localStorage.removeItem('user');
+        return null;
+      }
+    }
+    return null;
+  });
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('token');
+  });
+  
   const navigate = useNavigate();
 
   /**
    * Prüft beim Laden der Komponente, ob ein gültiger Token existiert
+   * und lädt die Benutzerdaten aus dem localStorage
    */
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
-      // TODO: Benutzerinformationen vom Server abrufen
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && !savedUser) {
+      // Se tiver token mas não tiver dados do usuário, fazer logout
+      logout();
+    } else if (!token && savedUser) {
+      // Se tiver dados do usuário mas não tiver token, fazer logout
+      logout();
+    } else if (token && savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Erro ao carregar dados do usuário:', error);
+        logout();
+      }
     }
   }, []);
 
@@ -70,17 +101,37 @@ export const AuthProvider = ({ children }) => {
    * @async
    * @param {string} email - E-Mail-Adresse des Benutzers
    * @param {string} password - Passwort des Benutzers
-   * @returns {Promise<void>}
+   * @returns {Promise<boolean>} True bei erfolgreicher Anmeldung
    * @throws {Error} Bei ungültigen Anmeldeinformationen
    */
   const login = async (email, password) => {
     try {
       const response = await loginService(email, password);
+      
+      if (!response || !response.token || !response.benutzer) {
+        throw new Error('Ungültige Antwort vom Server');
+      }
+
+      const userData = {
+        id: response.benutzer.id,
+        name: response.benutzer.name,
+        email: response.benutzer.email
+      };
+
       localStorage.setItem('token', response.token);
-      setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      setUser(userData);
       setIsAuthenticated(true);
+      
       navigate('/rezepte');
+      return true;
     } catch (error) {
+      console.error('Login error:', error);
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       throw error;
     }
   };
@@ -97,11 +148,30 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       const response = await registerService(name, email, password);
+      
+      if (!response || !response.token) {
+        throw new Error('Ungültige Antwort vom Server');
+      }
+
+      const userData = {
+        name,
+        email,
+        ...response.user
+      };
+
       localStorage.setItem('token', response.token);
-      setUser(response.user);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      setUser(userData);
       setIsAuthenticated(true);
+      
       navigate('/rezepte');
     } catch (error) {
+      console.error('Register error:', error);
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       throw error;
     }
   };
@@ -111,6 +181,7 @@ export const AuthProvider = ({ children }) => {
    */
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
     navigate('/login');
