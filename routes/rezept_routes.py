@@ -1,3 +1,15 @@
+"""
+@fileoverview Rezeptrouten für das Intranet-Kochbuch
+@module rezept_routes
+
+Dieses Modul implementiert die API-Endpunkte für Rezeptverwaltung:
+- Auflisten und Suchen von Rezepten
+- Erstellen neuer Rezepte
+- Aktualisieren bestehender Rezepte
+- Löschen von Rezepten
+- Bildupload-Funktionalität
+"""
+
 import os
 import uuid
 import imghdr
@@ -17,12 +29,22 @@ ERLAUBTE_ERWEITERUNGEN = {'png', 'jpg', 'jpeg', 'gif'}
 MAX_BILD_GROESSE_MB = 5
 
 def datei_erlaubt(dateiname):
-    """Überprüft, ob die Dateierweiterung erlaubt ist"""
+    """
+    Überprüft, ob die Dateierweiterung erlaubt ist.
+    
+    @param {string} dateiname - Name der zu prüfenden Datei
+    @return {boolean} True wenn die Erweiterung erlaubt ist, sonst False
+    """
     return '.' in dateiname and \
            dateiname.rsplit('.', 1)[1].lower() in ERLAUBTE_ERWEITERUNGEN
 
 def ist_bild(file_stream):
-    """Überprüft, ob der Dateiinhalt tatsächlich ein Bild ist"""
+    """
+    Überprüft, ob der Dateiinhalt tatsächlich ein Bild ist.
+    
+    @param {FileStorage} file_stream - Der zu prüfende Datei-Stream
+    @return {boolean} True wenn die Datei ein gültiges Bild ist, sonst False
+    """
     try:
         # Lesen Sie die ersten Bytes, um den Dateityp zu überprüfen
         header = file_stream.read(512)
@@ -34,7 +56,12 @@ def ist_bild(file_stream):
         return False
 
 def bild_speichern(bild):
-    """Speichert ein hochgeladenes Bild und gibt den Dateipfad zurück"""
+    """
+    Speichert ein hochgeladenes Bild sicher ab.
+    
+    @param {FileStorage} bild - Das hochgeladene Bild
+    @return {string|None} Der Pfad zum gespeicherten Bild oder None bei Fehler
+    """
     if not bild or not bild.filename:
         return None
         
@@ -59,20 +86,24 @@ def bild_speichern(bild):
         print(f"Fehler beim Speichern des Bildes: {e}")
         return None
 
-
-
-
 @rezept_bp.route('', methods=['GET'])
 def rezepte_liste():
     """
-    Listet alle Rezepte auf, mit optionaler Paginierung und Filterung
+    Listet alle Rezepte auf, mit optionaler Paginierung und Filterung.
     
-    Query-Parameter:
-    - limit: Maximale Anzahl der zurückzugebenden Rezepte (Standard: 10)
-    - offset: Anzahl der zu überspringenden Rezepte (Standard: 0)
-    - benutzer_id: Filtert nach Rezepten eines bestimmten Benutzers
-    - kategorie_id: Filtert nach Rezepten einer bestimmten Kategorie
-    - suchbegriff: Sucht nach Rezepten, die den Suchbegriff enthalten
+    @route GET /api/rezepte
+    
+    @query {int} [limit=10] - Maximale Anzahl der zurückzugebenden Rezepte
+    @query {int} [offset=0] - Anzahl der zu überspringenden Rezepte
+    @query {int} [benutzer_id] - Filter für Rezepte eines bestimmten Benutzers
+    @query {int} [kategorie_id] - Filter für Rezepte einer bestimmten Kategorie
+    @query {string} [suchbegriff] - Sucht nach Rezepten mit diesem Begriff
+    
+    @return {Object} response
+    @return {Array<Object>} response.rezepte - Liste der gefundenen Rezepte
+    @return {Object} response.meta - Metadaten zur Paginierung
+    
+    @throws {500} Bei internem Serverfehler
     """
     try:
         # Parameter aus der Anfrage extrahieren
@@ -106,10 +137,16 @@ def rezepte_liste():
 @rezept_bp.route('/<int:rezept_id>', methods=['GET'])
 def rezept_details(rezept_id):
     """
-    Gibt die Details eines bestimmten Rezepts zurück
+    Gibt die Details eines bestimmten Rezepts zurück.
     
-    Path-Parameter:
-    - rezept_id: ID des abzurufenden Rezepts
+    @route GET /api/rezepte/{rezept_id}
+    
+    @param {int} rezept_id - ID des abzurufenden Rezepts
+    
+    @return {Object} Das gefundene Rezept
+    
+    @throws {404} Wenn das Rezept nicht gefunden wurde
+    @throws {500} Bei internem Serverfehler
     """
     try:
         rezept = rezept_abrufen(rezept_id)
@@ -124,21 +161,28 @@ def rezept_details(rezept_id):
 
 @rezept_bp.route('', methods=['POST'])
 @token_erforderlich
-
 def rezept_erstellen_route(token_daten):
     """
-    Erstellt ein neues Rezept
+    Erstellt ein neues Rezept.
     
-    Erfordert einen gültigen JWT-Token
+    @route POST /api/rezepte
     
-    Request-Body:
-    - titel: Titel des Rezepts
-    - zutaten: Liste der Zutaten
-    - zubereitung: Zubereitungsanleitung
-    - kategorie_id: (Optional) ID der Kategorie
+    @auth Erfordert gültigen JWT-Token
     
-    Request-Files:
-    - bild: (Optional) Bild des Rezepts
+    @body {Object} request_body
+    @body {string} request_body.titel - Titel des Rezepts
+    @body {Array<Object>} request_body.zutaten - Liste der Zutaten
+    @body {string} request_body.zubereitung - Zubereitungsanleitung
+    @body {int} [request_body.kategorie_id] - ID der Kategorie
+    
+    @file {File} [bild] - Bild des Rezepts (max. 5MB, nur PNG/JPG/GIF)
+    
+    @return {Object} response
+    @return {string} response.nachricht - Erfolgsmeldung
+    @return {Object} response.rezept - Das erstellte Rezept
+    
+    @throws {400} Bei fehlenden oder ungültigen Daten
+    @throws {500} Bei internem Serverfehler
     """
     try:
         # Daten aus der Anfrage extrahieren
@@ -213,22 +257,27 @@ def rezept_erstellen_route(token_daten):
 @token_erforderlich
 def rezept_aktualisieren_route(token_daten, rezept_id):
     """
-    Aktualisiert ein bestehendes Rezept
+    Aktualisiert ein bestehendes Rezept.
     
-    Erfordert einen gültigen JWT-Token
-    Der Benutzer muss der Ersteller des Rezepts sein
+    @route PUT /api/rezepte/{rezept_id}
     
-    Path-Parameter:
-    - rezept_id: ID des zu aktualisierenden Rezepts
+    @auth Erfordert gültigen JWT-Token
     
-    Request-Body:
-    - titel: (Optional) Neuer Titel des Rezepts
-    - zutaten: (Optional) Neue Liste der Zutaten
-    - zubereitung: (Optional) Neue Zubereitungsanleitung
-    - kategorie_id: (Optional) Neue ID der Kategorie
+    @param {int} rezept_id - ID des zu aktualisierenden Rezepts
     
-    Request-Files:
-    - bild: (Optional) Neues Bild des Rezepts
+    @body {Object} request_body
+    @body {string} [request_body.titel] - Neuer Titel des Rezepts
+    @body {Array<Object>} [request_body.zutaten] - Neue Liste der Zutaten
+    @body {string} [request_body.zubereitung] - Neue Zubereitungsanleitung
+    @body {int} [request_body.kategorie_id] - Neue ID der Kategorie
+    
+    @file {File} [bild] - Neues Bild des Rezepts (max. 5MB, nur PNG/JPG/GIF)
+    
+    @return {Object} Das aktualisierte Rezept
+    
+    @throws {403} Bei fehlender Berechtigung
+    @throws {404} Wenn das Rezept nicht gefunden wurde
+    @throws {500} Bei internem Serverfehler
     """
     try:
         # Benutzer-ID aus Token extrahieren
@@ -302,13 +351,20 @@ def rezept_aktualisieren_route(token_daten, rezept_id):
 @token_erforderlich
 def rezept_loeschen_route(token_daten, rezept_id):
     """
-    Löscht ein bestehendes Rezept
+    Löscht ein bestehendes Rezept.
     
-    Erfordert einen gültigen JWT-Token
-    Der Benutzer muss der Ersteller des Rezepts sein
+    @route DELETE /api/rezepte/{rezept_id}
     
-    Path-Parameter:
-    - rezept_id: ID des zu löschenden Rezepts
+    @auth Erfordert gültigen JWT-Token
+    
+    @param {int} rezept_id - ID des zu löschenden Rezepts
+    
+    @return {Object} response
+    @return {string} response.nachricht - Erfolgsmeldung
+    
+    @throws {403} Bei fehlender Berechtigung
+    @throws {404} Wenn das Rezept nicht gefunden wurde
+    @throws {500} Bei internem Serverfehler
     """
     try:
         # Benutzer-ID aus Token extrahieren
@@ -336,12 +392,20 @@ def rezept_loeschen_route(token_daten, rezept_id):
 @rezept_bp.route('/suche', methods=['GET'])
 def rezepte_suche_route():
     """
-    Sucht nach Rezepten basierend auf einem Suchbegriff
+    Sucht nach Rezepten anhand eines Suchbegriffs.
     
-    Query-Parameter:
-    - q: Suchbegriff (Titel des Rezepts)
-    - limit: Maximale Anzahl der zurückzugebenden Rezepte (Standard: 10)
-    - offset: Anzahl der zu überspringenden Rezepte (Standard: 0)
+    @route GET /api/rezepte/suche
+    
+    @query {string} suchbegriff - Der zu suchende Begriff
+    @query {int} [limit=10] - Maximale Anzahl der Ergebnisse
+    @query {int} [offset=0] - Anzahl der zu überspringenden Ergebnisse
+    @query {int} [kategorie_id] - Filter für eine bestimmte Kategorie
+    
+    @return {Object} response
+    @return {Array<Object>} response.rezepte - Liste der gefundenen Rezepte
+    @return {Object} response.meta - Metadaten zur Paginierung
+    
+    @throws {500} Bei internem Serverfehler
     """
     try:
         # Suchbegriff aus der Anfrage extrahieren

@@ -1,17 +1,38 @@
+"""
+@fileoverview Validierungsutilitäten für das Intranet-Kochbuch
+@module validators
+
+Dieses Modul stellt Funktionen für die Validierung von Benutzereingaben bereit:
+- E-Mail-Validierung
+- Passwort-Validierung
+"""
+
 import re
 
 def email_validieren(email):
-    """Valida o formato de um endereço de email."""
+    """
+    Überprüft, ob eine E-Mail-Adresse ein gültiges Format hat.
+    
+    @param {string} email - Die zu überprüfende E-Mail-Adresse
+    
+    @return {boolean} True wenn das Format gültig ist, sonst False
+    """
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
 def passwort_validieren(passwort):
     """
-    Valida se a senha atende aos requisitos de segurança:
-    - Pelo menos 8 caracteres
-    - Pelo menos 1 letra maiúscula
-    - Pelo menos 1 número
-    - Pelo menos 1 caractere especial
+    Überprüft, ob ein Passwort die Sicherheitsanforderungen erfüllt.
+    
+    Anforderungen:
+    - Mindestens 8 Zeichen
+    - Mindestens ein Großbuchstabe
+    - Mindestens eine Zahl
+    - Mindestens ein Sonderzeichen
+    
+    @param {string} passwort - Das zu überprüfende Passwort
+    
+    @return {boolean} True wenn alle Anforderungen erfüllt sind, sonst False
     """
     if len(passwort) < 8:
         return False

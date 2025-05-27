@@ -1,3 +1,13 @@
+"""
+@fileoverview Hauptanwendungsmodul für das Intranet-Kochbuch Backend
+@module app
+
+Dieses Modul initialisiert die Flask-Anwendung und konfiguriert:
+- CORS für Cross-Origin-Anfragen
+- Statische Datei-Uploads
+- API-Routen für Benutzer und Rezepte
+"""
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 import os
@@ -25,6 +35,11 @@ app.register_blueprint(rezept_bp, url_prefix='/api/rezepte')
 
 @app.route("/")
 def home():
+    """
+    Hauptendpunkt der API
+    
+    @return {dict} Willkommensnachricht
+    """
     return jsonify({"nachricht": "Willkommen im Intranet-Kochbuch!"})
 
 if __name__ == "__main__":

@@ -1,7 +1,27 @@
+/**
+ * @fileoverview Komponente zur Anzeige einer Rezeptkarte
+ * @component RecipeCard
+ */
+
 import React from 'react';
 import { Card, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
+/**
+ * RecipeCard Komponente
+ * Zeigt eine Vorschau eines Rezepts in Kartenform an
+ * 
+ * @param {Object} props - Komponenteneigenschaften
+ * @param {Object} props.recipe - Das anzuzeigende Rezept
+ * @param {string} props.recipe.id - ID des Rezepts
+ * @param {string} props.recipe.titel - Titel des Rezepts
+ * @param {string} props.recipe.bild_pfad - URL zum Bild des Rezepts
+ * @param {string} props.recipe.zubereitungszeit - Zubereitungszeit des Rezepts
+ * @param {string} props.recipe.schwierigkeitsgrad - Schwierigkeitsgrad des Rezepts
+ * @param {string} [props.recipe.bewertung] - Bewertung des Rezepts
+ * @returns {JSX.Element} Die gerenderte RecipeCard Komponente
+ */
 const RecipeCard = ({ recipe }) => {
   const {
     id,
@@ -54,6 +74,17 @@ const RecipeCard = ({ recipe }) => {
       </Card.Body>
     </Card>
   );
+};
+
+RecipeCard.propTypes = {
+  recipe: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    titel: PropTypes.string.isRequired,
+    bild_pfad: PropTypes.string.isRequired,
+    zubereitungszeit: PropTypes.string.isRequired,
+    schwierigkeitsgrad: PropTypes.string.isRequired,
+    bewertung: PropTypes.number
+  }).isRequired
 };
 
 export default RecipeCard;

@@ -1,176 +1,219 @@
-import React, { useContext, useState } from 'react';
-import { Form, Button, Card, Alert, Container, Row, Col } from 'react-bootstrap';
-import { Formik } from 'formik';
-import * as Yup from 'yup';
-import { useNavigate, Link } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+/**
+ * @fileoverview Registrierungsseite für neue Benutzer
+ * @component Register
+ */
 
-// Validierungsschema für das Registrierungsformular
-const RegisterSchema = Yup.object().shape({
-  // Name muss mindestens 3 Zeichen lang sein
-  name: Yup.string()
-    .min(3, 'Name muss mindestens 3 Zeichen haben')
-    .required('Name ist erforderlich'),
-  // E-Mail-Validierung
-  email: Yup.string()
-    .email('Ungültige E-Mail-Adresse')
-    .required('E-Mail ist erforderlich'),
-  // Passwort-Validierung mit Sicherheitsanforderungen
-  password: Yup.string()
-    .min(8, 'Passwort muss mindestens 8 Zeichen haben')
-    .matches(/[A-Z]/, 'Passwort muss mindestens einen Großbuchstaben enthalten')
-    .matches(/[0-9]/, 'Passwort muss mindestens eine Zahl enthalten')
-    .matches(/[!@#$%^&*]/, 'Passwort muss mindestens ein Sonderzeichen enthalten')
-    .required('Passwort ist erforderlich'),
-  // Passwortbestätigung muss mit dem Passwort übereinstimmen
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password'), null], 'Passwörter müssen übereinstimmen')
-    .required('Passwortbestätigung ist erforderlich')
-});
+import React, { useState } from 'react';
+import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-// Registrierungskomponente
+/**
+ * @typedef {Object} FormData
+ * @property {string} name - Name des Benutzers
+ * @property {string} email - E-Mail-Adresse des Benutzers
+ * @property {string} password - Passwort des Benutzers
+ * @property {string} confirmPassword - Passwortbestätigung
+ */
+
+/**
+ * Register Komponente
+ * Stellt ein Formular für die Benutzerregistrierung bereit
+ * @returns {JSX.Element} Die gerenderte Register Komponente
+ */
 const Register = () => {
-  // Context und State-Hooks
-  const { register, error } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const { register } = useAuth();
 
-  // Formular absenden
-  const handleSubmit = async (values, { setSubmitting }) => {
-    try {
-      // Registrierungsversuch mit den eingegebenen Daten
-      const success = await register(values.name, values.email, values.password);
-      if (success) {
-        // Bei erfolgreicher Registrierung
-        setRegistrationSuccess(true);
-        // Weiterleitung zur Login-Seite nach 2 Sekunden
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-      }
-    } catch (err) {
-      console.error('Fehler bei der Registrierung:', err);
-    } finally {
-      // Formular-Submission-Status zurücksetzen
-      setSubmitting(false);
+  /**
+   * @type {FormData}
+   */
+  const initialFormData = {
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  };
+
+  // Formularstatus
+  const [formData, setFormData] = useState(initialFormData);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState('');
+
+  /**
+   * Validiert die Formulardaten
+   * @returns {boolean} True wenn die Validierung erfolgreich ist
+   */
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Name validieren
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name ist erforderlich';
+    } else if (formData.name.length < 2) {
+      newErrors.name = 'Name muss mindestens 2 Zeichen lang sein';
+    }
+
+    // E-Mail validieren
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email) {
+      newErrors.email = 'E-Mail ist erforderlich';
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Ungültige E-Mail-Adresse';
+    }
+
+    // Passwort validieren
+    if (!formData.password) {
+      newErrors.password = 'Passwort ist erforderlich';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Passwort muss mindestens 8 Zeichen lang sein';
+    }
+
+    // Passwortbestätigung validieren
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwortbestätigung ist erforderlich';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwörter stimmen nicht überein';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Aktualisiert die Formulardaten bei Benutzereingabe
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Das Change-Event
+   */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Fehler für das geänderte Feld zurücksetzen
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
-  // Render der Komponente
+  /**
+   * Verarbeitet das Absenden des Formulars
+   * @param {React.FormEvent<HTMLFormElement>} e - Das Submit-Event
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setServerError('');
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await register(formData.name, formData.email, formData.password);
+      navigate('/rezepte');
+    } catch (err) {
+      setServerError(
+        err.response?.data?.fehler || 
+        'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Container>
-      <Row className="justify-content-center mt-5">
+      <Row className="justify-content-center">
         <Col md={6}>
-          <Card>
-            <Card.Header as="h4" className="text-center">Registrieren</Card.Header>
-            <Card.Body>
-              {/* Fehlermeldung anzeigen, falls vorhanden */}
-              {error && <Alert variant="danger">{error}</Alert>}
-              {/* Erfolgsmeldung anzeigen nach erfolgreicher Registrierung */}
-              {registrationSuccess && (
-                <Alert variant="success">
-                  Registrierung erfolgreich! Sie werden zur Anmeldeseite weitergeleitet...
-                </Alert>
-              )}
-              
-              {/* Formular mit Formik für Validierung und State-Management */}
-              <Formik
-                initialValues={{ name: '', email: '', password: '', confirmPassword: '' }}
-                validationSchema={RegisterSchema}
-                onSubmit={handleSubmit}
-              >
-                {({
-                  values,
-                  errors,
-                  touched,
-                  handleChange,
-                  handleBlur,
-                  handleSubmit,
-                  isSubmitting
-                }) => (
-                  <Form onSubmit={handleSubmit}>
-                    {/* Namensfeld */}
-                    <Form.Group className="mb-3">
-                      <Form.Label>Name</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="name"
-                        value={values.name}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        isInvalid={touched.name && errors.name}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.name}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+          <div className="bg-white p-4 shadow rounded">
+            <h2 className="text-center mb-4">Registrieren</h2>
 
-                    {/* E-Mail-Feld */}
-                    <Form.Group className="mb-3">
-                      <Form.Label>E-Mail</Form.Label>
-                      <Form.Control
-                        type="email"
-                        name="email"
-                        value={values.email}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        isInvalid={touched.email && errors.email}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.email}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+            {serverError && (
+              <Alert variant="danger" className="mb-4">
+                {serverError}
+              </Alert>
+            )}
 
-                    {/* Passwortfeld */}
-                    <Form.Group className="mb-3">
-                      <Form.Label>Passwort</Form.Label>
-                      <Form.Control
-                        type="password"
-                        name="password"
-                        value={values.password}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        isInvalid={touched.password && errors.password}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.password}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+            <Form onSubmit={handleSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label>Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  isInvalid={!!errors.name}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.name}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-                    {/* Passwortbestätigungsfeld */}
-                    <Form.Group className="mb-3">
-                      <Form.Label>Passwort bestätigen</Form.Label>
-                      <Form.Control
-                        type="password"
-                        name="confirmPassword"
-                        value={values.confirmPassword}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        isInvalid={touched.confirmPassword && errors.confirmPassword}
-                      />
-                      <Form.Control.Feedback type="invalid">
-                        {errors.confirmPassword}
-                      </Form.Control.Feedback>
-                    </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>E-Mail-Adresse</Form.Label>
+                <Form.Control
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  isInvalid={!!errors.email}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.email}
+                </Form.Control.Feedback>
+              </Form.Group>
 
-                    {/* Registrierungsbutton */}
-                    <Button 
-                      variant="primary" 
-                      type="submit" 
-                      className="w-100" 
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Registrierung läuft...' : 'Registrieren'}
-                    </Button>
-                  </Form>
-                )}
-              </Formik>
-            </Card.Body>
-            {/* Link zur Login-Seite */}
-            <Card.Footer className="text-center">
-              Bereits ein Konto? <Link to="/login">Anmelden</Link>
-            </Card.Footer>
-          </Card>
+              <Form.Group className="mb-3">
+                <Form.Label>Passwort</Form.Label>
+                <Form.Control
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  isInvalid={!!errors.password}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.password}
+                </Form.Control.Feedback>
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label>Passwort bestätigen</Form.Label>
+                <Form.Control
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  isInvalid={!!errors.confirmPassword}
+                />
+                <Form.Control.Feedback type="invalid">
+                  {errors.confirmPassword}
+                </Form.Control.Feedback>
+              </Form.Group>
+
+              <div className="d-grid gap-2">
+                <Button 
+                  variant="primary" 
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? 'Wird registriert...' : 'Registrieren'}
+                </Button>
+              </div>
+            </Form>
+
+            <div className="text-center mt-3">
+              <p className="mb-0">
+                Bereits registriert?{' '}
+                <Link to="/login">Jetzt anmelden</Link>
+              </p>
+            </div>
+          </div>
         </Col>
       </Row>
     </Container>

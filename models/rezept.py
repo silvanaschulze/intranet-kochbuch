@@ -1,3 +1,15 @@
+"""
+@fileoverview Rezeptmodell für das Intranet-Kochbuch
+@module rezept
+
+Dieses Modul implementiert die Datenbankoperationen für Rezepte:
+- Erstellen neuer Rezepte
+- Abrufen von Rezepten
+- Aktualisieren bestehender Rezepte
+- Löschen von Rezepten
+- Suchen nach Rezepten
+"""
+
 from db import verbinden, verbindung_schliessen
 import json
 
@@ -5,16 +17,16 @@ def rezept_erstellen(titel, zutaten, zubereitung, benutzer_id, bild_pfad=None, k
     """
     Erstellt ein neues Rezept in der Datenbank.
     
-    Args:
-        titel (str): Titel des Rezepts
-        zutaten (list): Liste der Zutaten als JSON-String oder Python-Liste
-        zubereitung (str): Zubereitungsanleitung
-        benutzer_id (int): ID des Benutzers, der das Rezept erstellt
-        bild_pfad (str, optional): Pfad zum Bild des Rezepts
-        kategorie_id (int, optional): ID der Kategorie des Rezepts
-        
-    Returns:
-        int: ID des erstellten Rezepts bei Erfolg, None bei Fehler
+    @param {string} titel - Titel des Rezepts
+    @param {list|string} zutaten - Liste der Zutaten oder JSON-String
+    @param {string} zubereitung - Zubereitungsanleitung
+    @param {int} benutzer_id - ID des Benutzers, der das Rezept erstellt
+    @param {string} [bild_pfad] - Pfad zum Bild des Rezepts
+    @param {int} [kategorie_id] - ID der Kategorie des Rezepts
+    
+    @return {int|None} ID des erstellten Rezepts bei Erfolg, None bei Fehler
+    
+    @throws {Exception} Bei Datenbankfehlern
     """
     verbindung = None
     cursor = None
@@ -50,11 +62,18 @@ def rezept_abrufen(rezept_id):
     """
     Ruft ein einzelnes Rezept anhand seiner ID ab.
     
-    Args:
-        rezept_id (int): Die ID des abzurufenden Rezepts
-        
-    Returns:
-        dict: Ein Dictionary mit den Rezeptdaten oder None, wenn das Rezept nicht gefunden wurde
+    @param {int} rezept_id - Die ID des abzurufenden Rezepts
+    
+    @return {dict|None} Rezeptdaten oder None bei Fehler
+    @return {int} return.id - Rezept-ID
+    @return {string} return.titel - Titel des Rezepts
+    @return {Array<Object>} return.zutaten - Liste der Zutaten
+    @return {string} return.zubereitung - Zubereitungsanleitung
+    @return {string} return.benutzer_name - Name des Erstellers
+    @return {string} [return.bild_pfad] - Pfad zum Rezeptbild
+    @return {int} [return.kategorie_id] - ID der Kategorie
+    
+    @throws {Exception} Bei Datenbankfehlern
     """
     verbindung = None
     cursor = None
@@ -96,14 +115,18 @@ def rezepte_auflisten(limit=10, offset=0, benutzer_id=None, kategorie_id=None):
     """
     Listet Rezepte mit optionaler Filterung und Paginierung auf.
     
-    Args:
-        limit (int, optional): Maximale Anzahl der zurückzugebenden Rezepte
-        offset (int, optional): Anzahl der zu überspringenden Rezepte (für Paginierung)
-        benutzer_id (int, optional): Filtert nach Rezepten eines bestimmten Benutzers
-        kategorie_id (int, optional): Filtert nach Rezepten einer bestimmten Kategorie
-        
-    Returns:
-        list: Liste von Rezept-Dictionaries
+    @param {int} [limit=10] - Maximale Anzahl der zurückzugebenden Rezepte
+    @param {int} [offset=0] - Anzahl der zu überspringenden Rezepte
+    @param {int} [benutzer_id] - Filter für Rezepte eines bestimmten Benutzers
+    @param {int} [kategorie_id] - Filter für Rezepte einer bestimmten Kategorie
+    
+    @return {Array<Object>} Liste von Rezept-Objekten
+    @return {int} return[].id - Rezept-ID
+    @return {string} return[].titel - Titel des Rezepts
+    @return {Array<Object>} return[].zutaten - Liste der Zutaten
+    @return {string} return[].benutzer_name - Name des Erstellers
+    
+    @throws {Exception} Bei Datenbankfehlern
     """
     verbindung = None
     cursor = None
@@ -164,17 +187,17 @@ def rezept_aktualisieren(rezept_id, titel=None, zutaten=None, zubereitung=None, 
     """
     Aktualisiert ein bestehendes Rezept.
     
-    Args:
-        rezept_id (int): ID des zu aktualisierenden Rezepts
-        titel (str, optional): Neuer Titel des Rezepts
-        zutaten (list, optional): Neue Liste der Zutaten
-        zubereitung (str, optional): Neue Zubereitungsanleitung
-        bild_pfad (str, optional): Neuer Pfad zum Bild des Rezepts
-        kategorie_id (int, optional): Neue Kategorie-ID
-        benutzer_id (int, optional): ID des Benutzers, der das Rezept aktualisieren darf
-        
-    Returns:
-        bool: True bei Erfolg, False bei Fehler
+    @param {int} rezept_id - ID des zu aktualisierenden Rezepts
+    @param {string} [titel] - Neuer Titel des Rezepts
+    @param {list|string} [zutaten] - Neue Liste der Zutaten oder JSON-String
+    @param {string} [zubereitung] - Neue Zubereitungsanleitung
+    @param {string} [bild_pfad] - Neuer Pfad zum Rezeptbild
+    @param {int} [kategorie_id] - Neue Kategorie-ID
+    @param {int} [benutzer_id] - ID des Benutzers für Berechtigungsprüfung
+    
+    @return {boolean} True bei erfolgreicher Aktualisierung, False bei Fehler
+    
+    @throws {Exception} Bei Datenbankfehlern
     """
     verbindung = None
     cursor = None
@@ -244,12 +267,12 @@ def rezept_loeschen(rezept_id, benutzer_id=None):
     """
     Löscht ein Rezept aus der Datenbank.
     
-    Args:
-        rezept_id (int): ID des zu löschenden Rezepts
-        benutzer_id (int, optional): ID des Benutzers, der das Rezept löschen darf
-        
-    Returns:
-        bool: True bei Erfolg, False bei Fehler
+    @param {int} rezept_id - ID des zu löschenden Rezepts
+    @param {int} [benutzer_id] - ID des Benutzers für Berechtigungsprüfung
+    
+    @return {boolean} True bei erfolgreicher Löschung, False bei Fehler
+    
+    @throws {Exception} Bei Datenbankfehlern
     """
     verbindung = None
     cursor = None
@@ -280,18 +303,22 @@ def rezept_loeschen(rezept_id, benutzer_id=None):
         if verbindung:
             verbindung_schliessen(verbindung)
 
-def rezepte_suchen(suchbegriff, limit=10, offset=0,  kategorie_id=None):
+def rezepte_suchen(suchbegriff, limit=10, offset=0, kategorie_id=None):
     """
-    Sucht nach Rezepten basierend auf einem Suchbegriff und optional einer Kategorie
+    Sucht nach Rezepten anhand eines Suchbegriffs.
     
-    Args:
-        suchbegriff (str): Suchbegriff für den Titel
-        limit (int, optional): Maximale Anzahl der zurückzugebenden Rezepte
-        offset (int, optional): Anzahl der zu überspringenden Rezepte
-        kategorie_id (int, optional): ID der Kategorie, nach der gefiltert werden soll
-        
-    Returns:
-        tuple: (Liste der gefundenen Rezepte, Gesamtanzahl der gefundenen Rezept
+    @param {string} suchbegriff - Der zu suchende Begriff
+    @param {int} [limit=10] - Maximale Anzahl der Ergebnisse
+    @param {int} [offset=0] - Anzahl der zu überspringenden Ergebnisse
+    @param {int} [kategorie_id] - Filter für eine bestimmte Kategorie
+    
+    @return {Array<Object>} Liste der gefundenen Rezepte
+    @return {int} return[].id - Rezept-ID
+    @return {string} return[].titel - Titel des Rezepts
+    @return {Array<Object>} return[].zutaten - Liste der Zutaten
+    @return {string} return[].benutzer_name - Name des Erstellers
+    
+    @throws {Exception} Bei Datenbankfehlern
     """
     verbindung = None
     cursor = None

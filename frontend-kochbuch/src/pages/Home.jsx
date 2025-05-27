@@ -1,29 +1,46 @@
-import React from 'react';
-import { login } from '../services/authService';
+/**
+ * @fileoverview Startseite der Anwendung
+ * @component Home
+ */
 
+import React from 'react';
+import { Container, Row, Col, Button } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+/**
+ * Home Komponente
+ * Zeigt die Startseite mit Willkommensnachricht und Aktionsschaltflächen an
+ * @returns {JSX.Element} Die gerenderte Home Komponente
+ */
 const Home = () => {
-  const handleTestLogin = async () => {
-    try {
-      const response = await login('test@example.com', 'Test1234!');
-      console.log('Login bem-sucedido:', response);
-      alert('Login bem-sucedido! Verifique o console.');
-    } catch (error) {
-      console.error('Erro no login:', error);
-      alert('Erro no login: ' + (error.response?.data?.fehler || error.message));
-    }
-  };
+  const { isAuthenticated } = useAuth();
 
   return (
-    <div className="text-center py-5">
-      <h1>Willkommen bei Intranet-Kochbuch</h1>
-      <p className="lead">Ihr Online-Kochbuch</p>
-      <button 
-        className="btn btn-primary mt-3" 
-        onClick={handleTestLogin}
-      >
-        Test Login
-      </button>
-    </div>
+    <Container className="py-5">
+      <Row className="justify-content-center text-center">
+        <Col md={8}>
+          <h1 className="display-4 mb-4">Willkommen beim Intranet-Kochbuch</h1>
+          <p className="lead mb-4">
+            Entdecken Sie eine Vielzahl von köstlichen Rezepten, teilen Sie Ihre eigenen Kreationen und lassen Sie sich von unserer Gemeinschaft inspirieren.
+          </p>
+          <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <Button as={Link} to="/rezepte" variant="primary" size="lg" className="px-4 me-sm-3">
+              Rezepte entdecken
+            </Button>
+            {isAuthenticated ? (
+              <Button as={Link} to="/rezept-erstellen" variant="outline-primary" size="lg" className="px-4">
+                Rezept erstellen
+              </Button>
+            ) : (
+              <Button as={Link} to="/register" variant="outline-primary" size="lg" className="px-4">
+                Jetzt registrieren
+              </Button>
+            )}
+          </div>
+        </Col>
+      </Row>
+    </Container>
   );
 };
 

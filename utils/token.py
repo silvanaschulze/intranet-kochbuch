@@ -1,15 +1,32 @@
+"""
+@fileoverview Token-Utilitäten für das Intranet-Kochbuch
+@module token
+
+Dieses Modul stellt Funktionen für die JWT-Token-Verwaltung bereit:
+- Token-Generierung
+- Token-Verifizierung
+- Geschützte Routen mit Token-Authentifizierung
+"""
+
 import jwt
 import datetime
 from functools import wraps
 from flask import request, jsonify
 
-# Chave secreta usada para codificar e decodificar o token
-# Dica: depois troque essa chave por uma variável de ambiente para mais segurança
+# Geheimer Schlüssel für Token-Signierung
+# TODO: In Produktionsumgebung durch Umgebungsvariable ersetzen
 SECRET_KEY = "mein_geheimer_schluessel"
 
 def token_generieren(benutzer_id, email):
     """
-    Gera um token JWT com o ID e email do usuário e expiração de 2 horas
+    Generiert einen JWT-Token für einen authentifizierten Benutzer.
+    
+    @param {int} benutzer_id - ID des Benutzers
+    @param {string} email - E-Mail-Adresse des Benutzers
+    
+    @return {string} Der generierte JWT-Token
+    
+    @throws {TypeError} Bei ungültigen Parametern
     """
     payload = {
         'benutzer_id': benutzer_id,
@@ -20,7 +37,17 @@ def token_generieren(benutzer_id, email):
 
 def token_verifizieren(token):
     """
-    Verifica e decodifica o token JWT
+    Verifiziert und dekodiert einen JWT-Token.
+    
+    @param {string} token - Der zu verifizierende JWT-Token
+    
+    @return {dict|None} Die dekodierten Token-Daten oder None bei ungültigem Token
+    @return {int} return.benutzer_id - ID des Benutzers
+    @return {string} return.email - E-Mail-Adresse des Benutzers
+    @return {datetime} return.exp - Ablaufzeitpunkt
+    
+    @throws {jwt.ExpiredSignatureError} Bei abgelaufenem Token
+    @throws {jwt.InvalidTokenError} Bei ungültigem Token
     """
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
@@ -32,7 +59,15 @@ def token_verifizieren(token):
 
 def token_erforderlich(f):
     """
-    Decorador que protege rotas exigindo um token válido no cabeçalho Authorization
+    Dekorator für geschützte Routen, die einen gültigen JWT-Token erfordern.
+    
+    @decorator
+    @param {function} f - Die zu schützende Route
+    
+    @return {function} Die geschützte Route
+    
+    @throws {403} Wenn kein Token vorhanden ist
+    @throws {401} Bei ungültigem oder abgelaufenem Token
     """
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -49,7 +84,6 @@ def token_erforderlich(f):
         if daten is None:
             return jsonify({'nachricht': 'Ungültiger oder abgelaufener Token'}), 401
 
-        # Armazena as informações do token nos kwargs
         kwargs['token_daten'] = daten
         return f(*args, **kwargs)
     return decorated

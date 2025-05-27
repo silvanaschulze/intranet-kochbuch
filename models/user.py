@@ -1,3 +1,12 @@
+"""
+@fileoverview Benutzermodell für das Intranet-Kochbuch
+@module user
+
+Dieses Modul implementiert die Datenbankoperationen für Benutzer:
+- Registrierung neuer Benutzer
+- Benutzerauthentifizierung
+"""
+
 from db import verbinden, verbindung_schliessen
 # Alterar esta linha:
 # from utils.security import passwort_hashen
@@ -6,6 +15,17 @@ from utils.security import passwort_hashen, passwort_verifizieren # [cite: 3]
 # Remover: import bcrypt # [cite: 3]
 
 def benutzer_registrieren(name, email, passwort):
+    """
+    Registriert einen neuen Benutzer in der Datenbank.
+    
+    @param {string} name - Name des Benutzers
+    @param {string} email - E-Mail-Adresse des Benutzers
+    @param {string} passwort - Unverschlüsseltes Passwort des Benutzers
+    
+    @return {boolean} True bei erfolgreicher Registrierung, False bei Fehler
+    
+    @throws {Exception} Bei Datenbankfehlern
+    """
     verbindung = None
     cursor = None
     try:
@@ -32,6 +52,19 @@ def benutzer_registrieren(name, email, passwort):
 
 
 def benutzer_anmelden(email, passwort):
+    """
+    Authentifiziert einen Benutzer anhand von E-Mail und Passwort.
+    
+    @param {string} email - E-Mail-Adresse des Benutzers
+    @param {string} passwort - Unverschlüsseltes Passwort des Benutzers
+    
+    @return {dict|None} Benutzerdaten bei erfolgreicher Anmeldung, None bei Fehler
+    @return {int} return.id - Benutzer-ID
+    @return {string} return.name - Benutzername
+    @return {string} return.email - E-Mail-Adresse
+    
+    @throws {Exception} Bei Datenbankfehlern
+    """
     verbindung = None
     cursor = None
     try:

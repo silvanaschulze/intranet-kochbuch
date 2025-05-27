@@ -1,11 +1,25 @@
+/**
+ * @fileoverview Komponente zur Anzeige einer Liste von Rezepten
+ * @component RecipeList
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Form, Button, Alert } from 'react-bootstrap';
+import PropTypes from 'prop-types';
 import RecipeCard from './RecipeCard';
 import { getRecipes, searchRecipes } from '../../services/recipeService';
 
-const RecipeList = () => {
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(true);
+/**
+ * RecipeList Komponente
+ * Zeigt eine Liste von Rezepten in einem Raster an
+ * 
+ * @param {Object} props - Komponenteneigenschaften
+ * @param {Array<Object>} props.recipes - Liste der anzuzeigenden Rezepte
+ * @param {boolean} [props.loading=false] - Gibt an, ob die Rezepte geladen werden
+ * @returns {JSX.Element} Die gerenderte RecipeList Komponente
+ */
+const RecipeList = ({ recipes, loading = false }) => {
+  const [recipesState, setRecipesState] = useState([]);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,7 +30,6 @@ const RecipeList = () => {
   // Função para carregar as receitas
   const loadRecipes = async () => {
     try {
-      setLoading(true);
       setError(null);
       
       let response;
@@ -27,15 +40,13 @@ const RecipeList = () => {
       }
 
       if (response && response.rezepte) {
-        setRecipes(response.rezepte);
+        setRecipesState(response.rezepte);
       } else {
-        setRecipes([]);
+        setRecipesState([]);
       }
     } catch (err) {
       console.error('Fehler beim Laden der Rezepte:', err);
       setError('Die Rezepte konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -62,6 +73,24 @@ const RecipeList = () => {
     setSortBy(e.target.value);
     setPage(1);
   };
+
+  if (loading) {
+    return (
+      <div className="text-center py-4">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Wird geladen...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!recipesState || recipesState.length === 0) {
+    return (
+      <div className="text-center py-4">
+        <p className="text-muted">Keine Rezepte gefunden.</p>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -102,25 +131,13 @@ const RecipeList = () => {
         </Alert>
       )}
 
-      {loading ? (
-        <div className="text-center py-5">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Laden...</span>
-          </div>
-        </div>
-      ) : recipes.length > 0 ? (
-        <Row xs={1} md={2} lg={3} className="g-4">
-          {recipes.map(recipe => (
-            <Col key={recipe.id}>
-              <RecipeCard recipe={recipe} />
-            </Col>
-          ))}
-        </Row>
-      ) : (
-        <div className="text-center py-5">
-          <p className="text-muted">Keine Rezepte gefunden.</p>
-        </div>
-      )}
+      <Row xs={1} md={2} lg={3} className="g-4">
+        {recipesState.map((recipe) => (
+          <Col key={recipe.id}>
+            <RecipeCard recipe={recipe} />
+          </Col>
+        ))}
+      </Row>
 
       <div className="d-flex justify-content-center mt-4">
         <Button 
@@ -136,13 +153,27 @@ const RecipeList = () => {
           variant="outline-primary" 
           className="mx-1"
           onClick={() => setPage(p => p + 1)}
-          disabled={recipes.length < limit || loading}
+          disabled={recipesState.length < limit || loading}
         >
           Nächste
         </Button>
       </div>
     </div>
   );
+};
+
+RecipeList.propTypes = {
+  recipes: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      titel: PropTypes.string.isRequired,
+      bild_pfad: PropTypes.string,
+      zubereitungszeit: PropTypes.string.isRequired,
+      schwierigkeitsgrad: PropTypes.string.isRequired,
+      bewertung: PropTypes.number
+    })
+  ).isRequired,
+  loading: PropTypes.bool
 };
 
 export default RecipeList;

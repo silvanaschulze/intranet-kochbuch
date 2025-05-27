@@ -1,8 +1,18 @@
+/**
+ * @fileoverview Header-Komponente mit Navigation und Authentifizierungsstatus
+ * @component Header
+ */
+
 import React, { useContext, useEffect } from 'react';
-import { Navbar, Container, Nav, NavDropdown } from 'react-bootstrap';
+import { Navbar, Container, Nav, NavDropdown, Button } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 
+/**
+ * Header-Komponente mit Navigationsmenü
+ * Zeigt verschiedene Menüoptionen basierend auf dem Authentifizierungsstatus an
+ * @returns {JSX.Element} Die gerenderte Header-Komponente
+ */
 const Header = () => {
   const { isAuthenticated, user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -12,6 +22,10 @@ const Header = () => {
     console.log('Auth Status:', { isAuthenticated, user });
   }, [isAuthenticated, user]);
 
+  /**
+   * Behandelt den Logout-Prozess
+   * Löscht den Token und leitet zur Login-Seite weiter
+   */
   const handleLogout = () => {
     logout();
     navigate('/login');

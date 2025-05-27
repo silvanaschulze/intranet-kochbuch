@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Frontend/Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .subsection {
+            margin: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+        }
+        .frontend-section {
+            border-left: 5px solid #007bff;
+        }
+        .backend-section {
+            border-left: 5px solid #28a745;
+        }
+        .frontend-subsection {
+            border-left: 3px solid #007bff;
+        }
+        .backend-subsection {
+            border-left: 3px solid #28a745;
+        }
+        .checklist-item {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+        }
+        .add-button {
+            background-color: #007bff;
+        }
+        .delete-button {
+            background-color: #dc3545;
+        }
+        .complete {
+            text-decoration: line-through;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Checklist do Projeto</h1>
+        
+        <!-- Botões de Exportar/Importar -->
+        <div style="margin-bottom: 20px;">
+            <button onclick="exportData()" class="add-button" style="margin-right: 10px;">Exportar Checklist</button>
+            <input type="file" id="importFile" style="display: none;" onchange="importData(this)">
+            <button onclick="document.getElementById('importFile').click()" class="add-button">Importar Checklist</button>
+        </div>
+
+        <!-- Frontend Section -->
+        <div class="section frontend-section">
+            <h2>Frontend</h2>
+            <div style="margin: 10px 0;">
+                <input type="text" id="frontend-subsection-input" placeholder="Nome da nova subseção">
+                <button onclick="addSubsection('frontend')" class="add-button">Adicionar Subseção</button>
+            </div>
+            <div id="frontend-subsections"></div>
+        </div>
+
+        <!-- Backend Section -->
+        <div class="section backend-section">
+            <h2>Backend</h2>
+            <div style="margin: 10px 0;">
+                <input type="text" id="backend-subsection-input" placeholder="Nome da nova subseção">
+                <button onclick="addSubsection('backend')" class="add-button">Adicionar Subseção</button>
+            </div>
+            <div id="backend-subsections"></div>
+        </div>
+    </div>
+
+    <script>
+        // Estrutura de dados
+        let data = JSON.parse(localStorage.getItem('checklist')) || {
+            frontend: {},
+            backend: {}
+        };
+
+        // Salvar dados
+        function saveData() {
+            localStorage.setItem('checklist', JSON.stringify(data));
+        }
+
+        // Criar elemento de tarefa
+        function createTaskElement(sectionType, subsectionId, taskId, taskText, isComplete = false) {
+            const div = document.createElement('div');
+            div.className = 'checklist-item';
+            if (isComplete) div.classList.add('complete');
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = isComplete;
+            checkbox.onchange = () => toggleTask(sectionType, subsectionId, taskId);
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = taskText;
+            input.onchange = (e) => updateTask(sectionType, subsectionId, taskId, e.target.value);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Deletar';
+            deleteBtn.className = 'delete-button';
+            deleteBtn.onclick = () => deleteTask(sectionType, subsectionId, taskId);
+
+            div.appendChild(checkbox);
+            div.appendChild(input);
+            div.appendChild(deleteBtn);
+            return div;
+        }
+
+        // Criar elemento de subseção
+        function createSubsectionElement(sectionType, subsectionId, subsectionName) {
+            const div = document.createElement('div');
+            div.className = `subsection ${sectionType}-subsection`;
+            div.id = `${sectionType}-${subsectionId}`;
+
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.justifyContent = 'space-between';
+            header.style.alignItems = 'center';
+            header.style.marginBottom = '10px';
+
+            const h3 = document.createElement('h3');
+            h3.textContent = subsectionName;
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Deletar Subseção';
+            deleteBtn.className = 'delete-button';
+            deleteBtn.onclick = () => deleteSubsection(sectionType, subsectionId);
+
+            header.appendChild(h3);
+            header.appendChild(deleteBtn);
+
+            const tasksDiv = document.createElement('div');
+            tasksDiv.className = 'tasks';
+
+            const addTaskDiv = document.createElement('div');
+            addTaskDiv.style.marginTop = '10px';
+
+            const taskInput = document.createElement('input');
+            taskInput.type = 'text';
+            taskInput.placeholder = 'Nova tarefa';
+
+            const addTaskBtn = document.createElement('button');
+            addTaskBtn.textContent = 'Adicionar Tarefa';
+            addTaskBtn.className = 'add-button';
+            addTaskBtn.onclick = () => addTask(sectionType, subsectionId);
+
+            addTaskDiv.appendChild(taskInput);
+            addTaskDiv.appendChild(addTaskBtn);
+
+            div.appendChild(header);
+            div.appendChild(tasksDiv);
+            div.appendChild(addTaskDiv);
+
+            return div;
+        }
+
+        // Adicionar subseção
+        function addSubsection(sectionType) {
+            const input = document.getElementById(`${sectionType}-subsection-input`);
+            const name = input.value.trim();
+            if (!name) return;
+
+            const id = Date.now().toString();
+            data[sectionType][id] = {
+                name: name,
+                tasks: {}
+            };
+
+            const element = createSubsectionElement(sectionType, id, name);
+            document.getElementById(`${sectionType}-subsections`).appendChild(element);
+            
+            input.value = '';
+            saveData();
+        }
+
+        // Deletar subseção
+        function deleteSubsection(sectionType, subsectionId) {
+            const element = document.getElementById(`${sectionType}-${subsectionId}`);
+            if (element) {
+                element.remove();
+                delete data[sectionType][subsectionId];
+                saveData();
+            }
+        }
+
+        // Adicionar tarefa
+        function addTask(sectionType, subsectionId) {
+            const subsection = document.getElementById(`${sectionType}-${subsectionId}`);
+            const input = subsection.querySelector('input[type="text"]');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const taskId = Date.now().toString();
+            data[sectionType][subsectionId].tasks[taskId] = {
+                text: text,
+                complete: false
+            };
+
+            const element = createTaskElement(sectionType, subsectionId, taskId, text);
+            subsection.querySelector('.tasks').appendChild(element);
+            
+            input.value = '';
+            saveData();
+        }
+
+        // Atualizar tarefa
+        function updateTask(sectionType, subsectionId, taskId, newText) {
+            data[sectionType][subsectionId].tasks[taskId].text = newText;
+            saveData();
+        }
+
+        // Alternar estado da tarefa
+        function toggleTask(sectionType, subsectionId, taskId) {
+            const task = data[sectionType][subsectionId].tasks[taskId];
+            task.complete = !task.complete;
+            
+            const taskElement = document.querySelector(`#${sectionType}-${subsectionId} .tasks`).children[taskId];
+            if (taskElement) {
+                taskElement.classList.toggle('complete');
+            }
+            
+            saveData();
+        }
+
+        // Deletar tarefa
+        function deleteTask(sectionType, subsectionId, taskId) {
+            const taskElement = document.querySelector(`#${sectionType}-${subsectionId} .tasks`).children[taskId];
+            if (taskElement) {
+                taskElement.remove();
+                delete data[sectionType][subsectionId].tasks[taskId];
+                saveData();
+            }
+        }
+
+        // Carregar dados salvos
+        function loadSavedData() {
+            for (const sectionType of ['frontend', 'backend']) {
+                for (const subsectionId in data[sectionType]) {
+                    const subsection = data[sectionType][subsectionId];
+                    const element = createSubsectionElement(sectionType, subsectionId, subsection.name);
+                    document.getElementById(`${sectionType}-subsections`).appendChild(element);
+
+                    for (const taskId in subsection.tasks) {
+                        const task = subsection.tasks[taskId];
+                        const taskElement = createTaskElement(sectionType, subsectionId, taskId, task.text, task.complete);
+                        element.querySelector('.tasks').appendChild(taskElement);
+                    }
+                }
+            }
+        }
+
+        // Adicionar event listeners para tecla Enter
+        document.getElementById('frontend-subsection-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addSubsection('frontend');
+        });
+        document.getElementById('backend-subsection-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addSubsection('backend');
+        });
+
+        // Inicializar
+        loadSavedData();
+
+        // Função para exportar dados
+        function exportData() {
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'checklist_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Função para importar dados
+        function importData(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (confirm('Tem certeza que deseja importar estes dados? Os dados atuais serão substituídos.')) {
+                            data = importedData;
+                            localStorage.setItem('checklist', JSON.stringify(data));
+                            // Limpar e recarregar as seções
+                            document.getElementById('frontend-subsections').innerHTML = '';
+                            document.getElementById('backend-subsections').innerHTML = '';
+                            loadSavedData();
+                            alert('Dados importados com sucesso!');
+                        }
+                    } catch (error) {
+                        alert('Erro ao importar arquivo: Formato inválido');
+                    }
+                };
+                reader.readAsText(file);
+            }
+            input.value = ''; // Limpar input para permitir importar o mesmo arquivo novamente
+        }
+    </script>
+</body>
+</html> 

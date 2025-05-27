@@ -1,151 +1,134 @@
-// AuthContext.jsx - Verwaltung der Benutzerauthentifizierung
+/**
+ * @fileoverview Authentifizierungskontext für die Verwaltung des Benutzerstatus
+ * @module AuthContext
+ */
 
-import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { login as loginService, register as registerService } from '../services/authService';
 
-// Erstellen des AuthContext für die Authentifizierungsdaten
-export const AuthContext = createContext();
+/**
+ * @typedef {Object} User
+ * @property {string} id - Benutzer-ID
+ * @property {string} name - Benutzername
+ * @property {string} email - E-Mail-Adresse des Benutzers
+ */
 
-// AuthProvider-Komponente für die Verwaltung des Authentifizierungszustands
+/**
+ * @typedef {Object} AuthContextType
+ * @property {User|null} user - Aktuell eingeloggter Benutzer
+ * @property {boolean} isAuthenticated - Authentifizierungsstatus
+ * @property {Function} login - Funktion zum Einloggen
+ * @property {Function} register - Funktion zum Registrieren
+ * @property {Function} logout - Funktion zum Ausloggen
+ */
+
+/**
+ * Authentifizierungskontext
+ * @type {React.Context<AuthContextType>}
+ */
+const AuthContext = createContext(null);
+
+/**
+ * Hook für den Zugriff auf den Authentifizierungskontext
+ * @returns {AuthContextType} Authentifizierungskontext
+ */
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth muss innerhalb eines AuthProvider verwendet werden');
+  }
+  return context;
+};
+
+/**
+ * AuthProvider Komponente
+ * Stellt Authentifizierungsfunktionalität für die Anwendung bereit
+ * 
+ * @param {Object} props - Komponenteneigenschaften
+ * @param {React.ReactNode} props.children - Kindkomponenten
+ * @returns {JSX.Element} Die gerenderte AuthProvider Komponente
+ */
 export const AuthProvider = ({ children }) => {
-  // Zustandsvariablen für die Authentifizierung
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
-  // API-Basis-URL
-  const API_URL = 'http://192.168.64.3:5000';
-
-  // Benutzerprofil abrufen
-  const fetchUserProfile = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/benutzer/profil`);
-      console.log('Benutzerprofil:', response.data);
-      const userData = {
-        ...response.data,
-        name: response.data.name || response.data.email
-      };
-      setUser(userData);
-      return userData;
-    } catch (err) {
-      console.error('Fehler beim Abrufen des Benutzerprofils:', err);
-      return null;
-    }
-  };
-
-  // Beim ersten Laden prüfen, ob ein Token vorhanden ist
+  /**
+   * Prüft beim Laden der Komponente, ob ein gültiger Token existiert
+   */
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      
-      if (token) {
-        // Token zu den Axios-Header hinzufügen
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        
-        try {
-          const userData = await fetchUserProfile();
-          if (userData) {
-            setIsAuthenticated(true);
-          } else {
-            // Bei Fehler Token entfernen
-            localStorage.removeItem('token');
-            delete axios.defaults.headers.common['Authorization'];
-          }
-        } catch (err) {
-          console.error('Fehler bei der Authentifizierungsprüfung:', err);
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
-        }
-      }
-      
-      setLoading(false);
-    };
-
-    checkAuth();
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+      // TODO: Benutzerinformationen vom Server abrufen
+    }
   }, []);
 
-  // Anmeldungsfunktion
+  /**
+   * Führt den Login-Prozess durch
+   * @async
+   * @param {string} email - E-Mail-Adresse des Benutzers
+   * @param {string} password - Passwort des Benutzers
+   * @returns {Promise<void>}
+   * @throws {Error} Bei ungültigen Anmeldeinformationen
+   */
   const login = async (email, password) => {
     try {
-      console.log('Login-Versuch für:', email);
-      const response = await axios.post(`${API_URL}/api/benutzer/login`, {
-        email,
-        passwort: password
-      });
-
-      console.log('Login-Antwort:', response.data);
-
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-        
-        // Benutzerdaten aus der Login-Antwort oder vom Profil-Endpoint
-         const userData = await fetchUserProfile();
-
-        if (userData) {
-          setIsAuthenticated(true);
-          setError(null);
-          console.log('Benutzer erfolgreich angemeldet:', userData);
-          return true;
-        }
-      }
-      return false;
-    } catch (err) {
-      console.error('Login-Fehler:', err);
-      const errorMessage = err.response?.data?.fehler || 'Ungültige E-Mail oder Passwort';
-      setError(errorMessage);
-      return false;
+      const response = await loginService(email, password);
+      localStorage.setItem('token', response.token);
+      setUser(response.user);
+      setIsAuthenticated(true);
+      navigate('/rezepte');
+    } catch (error) {
+      throw error;
     }
   };
 
-  // Registrierungsfunktion
+  /**
+   * Führt den Registrierungsprozess durch
+   * @async
+   * @param {string} name - Name des Benutzers
+   * @param {string} email - E-Mail-Adresse des Benutzers
+   * @param {string} password - Passwort des Benutzers
+   * @returns {Promise<void>}
+   * @throws {Error} Bei Validierungsfehlern
+   */
   const register = async (name, email, password) => {
     try {
-      // Registrierungsanfrage an das Backend senden
-      const response = await axios.post(`${API_URL}/api/benutzer/register`, {
-        name,
-        email,
-        passwort: password
-      });
-
-      // Bei erfolgreicher Registrierung
-      if (response.data.nachricht) {
-        setError(null);
-        return true;
-      }
-    } catch (err) {
-      // Fehlermeldung anzeigen
-      const errorMessage = err.response?.data?.fehler || 'Registrierung fehlgeschlagen';
-      setError(errorMessage);
-      return false;
+      const response = await registerService(name, email, password);
+      localStorage.setItem('token', response.token);
+      setUser(response.user);
+      setIsAuthenticated(true);
+      navigate('/rezepte');
+    } catch (error) {
+      throw error;
     }
   };
 
-  // Abmeldungsfunktion
+  /**
+   * Führt den Logout-Prozess durch
+   */
   const logout = () => {
-    // Token entfernen und Authentifizierungszustand zurücksetzen
     localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    setIsAuthenticated(false);
     setUser(null);
-    setError(null);
+    setIsAuthenticated(false);
+    navigate('/login');
   };
 
-  // Context-Provider mit allen Authentifizierungswerten
+  const value = {
+    user,
+    isAuthenticated,
+    login,
+    register,
+    logout
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,  // Authentifizierungsstatus
-        user,            // Benutzerdaten
-        loading,         // Ladezustand
-        error,          // Fehlermeldungen
-        login,          // Anmeldungsfunktion
-        register,       // Registrierungsfunktion
-        logout         // Abmeldungsfunktion
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;

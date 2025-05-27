@@ -1,4 +1,7 @@
-// src/pages/Login.jsx
+/**
+ * @fileoverview Login-Seite für die Benutzerauthentifizierung
+ * @component Login
+ */
 
 import React, { useContext, useState } from 'react';
 import { Form, Button, Card, Alert, Container, Row, Col } from 'react-bootstrap';
@@ -16,6 +19,11 @@ const LoginSchema = Yup.object().shape({
     .required('Passwort ist erforderlich')
 });
 
+/**
+ * Login Komponente
+ * Stellt ein Formular für die Benutzeranmeldung bereit
+ * @returns {JSX.Element} Die gerenderte Login Komponente
+ */
 const Login = () => {
   // Auth-Kontext verwenden
   const { login, error, user } = useContext(AuthContext);
