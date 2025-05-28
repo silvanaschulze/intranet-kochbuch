@@ -3,10 +3,11 @@
  * @component RecipeCard
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
+
 
 /**
  * RecipeCard Komponente
@@ -34,38 +35,44 @@ const RecipeCard = ({ recipe }) => {
     bewertung: rating = 0
   } = recipe;
 
+   const [imageError, setImageError] = useState(false);
+
   // URL base para imagens e imagem padrão
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.64.3:5000';
   const DEFAULT_IMAGE = 'https://via.placeholder.com/300x200?text=Kein+Bild+verfügbar';
   
   // Função para construir URL da imagem
   const getImageUrl = (imagePath) => {
-    if (!imagePath) return DEFAULT_IMAGE;
-    
-    // Se for um objeto com thumb_url, use-o
-    if (typeof imagePath === 'object' && imagePath.thumb_url) {
-      return `${API_URL}/${imagePath.thumb_url.replace(/^\//, '')}`;
-    }
-    
-    // Se for uma string (caminho direto)
-    if (typeof imagePath === 'string') {
-      return imagePath.startsWith('http') 
-        ? imagePath 
-        : `${API_URL}/${imagePath.replace(/^\//, '')}`;
+    if (!imagePath || imageError) return DEFAULT_IMAGE;
+    try {
+      // Se for um objeto com thumb_url
+      if (typeof imagePath === 'object' && imagePath.thumb_url) {
+        return `${API_URL}/${imagePath.thumb_url}`;
+      }
+      
+      // Se for uma string
+      if (typeof imagePath === 'string') {
+        // Se já for uma URL completa
+        if (imagePath.startsWith('http')) {
+          return imagePath;
+        }
+        // Se for um caminho relativo
+        return `${API_URL}/${imagePath}`;
+      }
+    } catch (error) {
+      console.error('Erro ao processar URL da imagem:', error);
+      return DEFAULT_IMAGE; 
     }
     
     return DEFAULT_IMAGE;
   };
-
-  // Construir URL da imagem
-  const imageUrl = getImageUrl(image);
 
   return (
     <Card className="h-100 shadow-sm">
       <div className="card-img-wrapper" style={{ height: '200px', overflow: 'hidden' }}>
         <Card.Img 
           variant="top" 
-          src={imageUrl} 
+          src={getImageUrl(image)} 
           alt={title}
           style={{ 
             width: '100%',
@@ -74,13 +81,11 @@ const RecipeCard = ({ recipe }) => {
             transition: 'transform 0.3s ease'
           }}
           onError={(e) => {
-            console.error('Erro ao carregar imagem:', imageUrl);
-            e.target.onerror = null; // Previne loop infinito
+            console.error('Erro ao carregar imagem:', e.target.src);
+            setImageError(true);
             e.target.src = DEFAULT_IMAGE;
           }}
-          onLoad={() => {
-            console.log('Imagem carregada com sucesso:', imageUrl);
-          }}
+         
         />
       </div>
       <Card.Body>
@@ -96,7 +101,7 @@ const RecipeCard = ({ recipe }) => {
             {'☆'.repeat(5 - Math.ceil(rating))}
           </div>
           <Link 
-            to={`/rezept/${id}`} 
+            to={`/rezepte/${id}`}  
             className="btn btn-sm btn-outline-primary"
             aria-label={`Details für ${title} anzeigen`}
           >

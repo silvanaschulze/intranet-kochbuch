@@ -3,7 +3,7 @@
  * @component RecipeList
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import RecipeCard from './RecipeCard';
@@ -27,8 +27,8 @@ const RecipeList = ({ recipes, loading = false }) => {
   const [sortBy, setSortBy] = useState('newest');
   const limit = 9; // Número de receitas por página
 
-  // Função para carregar as receitas
-  const loadRecipes = async () => {
+   // Função para carregar as receitas usando useCallback
+  const loadRecipes = useCallback(async () => {
     try {
       setError(null);
       
@@ -48,7 +48,7 @@ const RecipeList = ({ recipes, loading = false }) => {
       console.error('Fehler beim Laden der Rezepte:', err);
       setError('Die Rezepte konnten nicht geladen werden. Bitte versuchen Sie es später erneut.');
     }
-  };
+   }, [page, searchTerm, limit]);
 
   // Laden der Rezepte beim ersten Render und bei Änderungen der Suchparameter
   useEffect(() => {

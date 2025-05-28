@@ -9,7 +9,7 @@ import axios from 'axios';
  * Basis-URL für alle API-Anfragen
  * @constant {string}
  */
-const API_URL = 'http://192.168.64.3:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://192.168.64.3:5000';
 
 /**
  * Konfigurierte Axios-Instanz für API-Anfragen
@@ -79,6 +79,10 @@ api.interceptors.response.use(
           // Erro do servidor
           console.error('Erro interno do servidor');
           break;
+        default:
+          // Outros erros
+          console.error(`Erro não tratado: ${error.response.status}`);
+          break;  
       }
     } else if (error.request) {
       // Erro de conexão

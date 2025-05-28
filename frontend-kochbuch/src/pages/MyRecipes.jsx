@@ -3,10 +3,10 @@
  * @component MyRecipesPage
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Alert, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { getUserRecipes } from '../../services/recipeService';
+import { getUserRecipes } from '../services/recipeService';
 import RecipeList from '../components/Recipe/RecipeList';
 
 /**
@@ -20,14 +20,11 @@ const MyRecipesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadUserRecipes();
-  }, []);
 
   /**
    * Lädt die Rezepte des Benutzers
    */
-  const loadUserRecipes = async () => {
+  const loadUserRecipes = useCallback(async () => {
     try {
       setLoading(true);
       const userRecipes = await getUserRecipes();
@@ -38,7 +35,11 @@ const MyRecipesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+      }, []);
+
+  useEffect(() => {
+    loadUserRecipes();
+  }, [loadUserRecipes]);
 
   return (
     <Container className="py-4">

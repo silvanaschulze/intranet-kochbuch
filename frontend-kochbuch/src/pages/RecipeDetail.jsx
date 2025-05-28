@@ -3,7 +3,7 @@
  * @component RecipeDetailPage
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Button, Modal, Alert, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getRecipe, deleteRecipe } from '../services/recipeService';
@@ -25,18 +25,12 @@ const RecipeDetailPage = () => {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  /**
-   * Lädt die Rezeptdetails beim ersten Render
-   */
-  useEffect(() => {
-    loadRecipeDetails();
-   }, [id, loadRecipeDetails]);
 
   /**
    * Lädt die Details eines spezifischen Rezepts
    * @async
    */
-  const loadRecipeDetails = async () => {
+  const loadRecipeDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -48,7 +42,14 @@ const RecipeDetailPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+      }, [id]);
+
+  /**
+   * Lädt die Rezeptdetails beim ersten Render
+   */
+  useEffect(() => {
+    loadRecipeDetails();
+  }, [loadRecipeDetails]);
 
   /**
    * Verarbeitet das Löschen eines Rezepts

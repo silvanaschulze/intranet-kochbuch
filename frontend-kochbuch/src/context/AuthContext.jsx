@@ -2,8 +2,7 @@
  * @fileoverview Authentifizierungskontext für die Verwaltung des Benutzerstatus
  * @module AuthContext
  */
-
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login as loginService, register as registerService } from '../services/authService';
 
@@ -69,6 +68,18 @@ export const AuthProvider = ({ children }) => {
   });
   
   const navigate = useNavigate();
+
+
+  /**
+   * Führt den Logout-Prozess durch
+   */
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsAuthenticated(false);
+    navigate('/login');
+  }, [navigate]);
 
   /**
    * Prüft beim Laden der Komponente, ob ein gültiger Token existiert
@@ -179,13 +190,7 @@ export const AuthProvider = ({ children }) => {
   /**
    * Führt den Logout-Prozess durch
    */
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setIsAuthenticated(false);
-    navigate('/login');
-  };
+
 
   const value = {
     user,
