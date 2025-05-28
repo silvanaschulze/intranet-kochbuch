@@ -4,10 +4,11 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Form, Button, Alert } from 'react-bootstrap';
+import { Row, Col, Form, Button, Alert, Container, Card, Spinner } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import RecipeCard from './RecipeCard';
-import { getRecipes, searchRecipes } from '../../services/recipeService';
+import recipeService from '../../services/recipeService.jsx';
+import { Link } from 'react-router-dom';
 
 /**
  * RecipeList Komponente
@@ -34,9 +35,9 @@ const RecipeList = ({ recipes, loading = false }) => {
       
       let response;
       if (searchTerm) {
-        response = await searchRecipes(searchTerm);
+        response = await recipeService.searchRecipes(searchTerm);
       } else {
-        response = await getRecipes(page, limit);
+        response = await recipeService.getAllRecipes(page, limit);
       }
 
       if (response && response.rezepte) {
@@ -76,24 +77,24 @@ const RecipeList = ({ recipes, loading = false }) => {
 
   if (loading) {
     return (
-      <div className="text-center py-4">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Wird geladen...</span>
-        </div>
+      <div className="text-center mt-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
       </div>
     );
   }
 
   if (!recipesState || recipesState.length === 0) {
     return (
-      <div className="text-center py-4">
-        <p className="text-muted">Keine Rezepte gefunden.</p>
+      <div className="text-center mt-5 text-danger">
+        <p>{error || 'Keine Rezepte gefunden.'}</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <Container>
       <Form onSubmit={handleSearch} className="mb-4">
         <Row>
           <Col md={6}>
@@ -125,16 +126,31 @@ const RecipeList = ({ recipes, loading = false }) => {
         </Row>
       </Form>
 
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          {error}
-        </Alert>
-      )}
-
       <Row xs={1} md={2} lg={3} className="g-4">
         {recipesState.map((recipe) => (
           <Col key={recipe.id}>
-            <RecipeCard recipe={recipe} />
+            <Card className="h-100">
+              {recipe.image && (
+                <Card.Img
+                  variant="top"
+                  src={`${process.env.REACT_APP_API_URL}/static/uploads/${recipe.image}`}
+                  alt={recipe.title}
+                />
+              )}
+              <Card.Body>
+                <Card.Title>{recipe.title}</Card.Title>
+                <Card.Text>
+                  {recipe.description?.substring(0, 100)}...
+                </Card.Text>
+                <Button
+                  as={Link}
+                  to={`/recipes/${recipe.id}`}
+                  variant="primary"
+                >
+                  View Recipe
+                </Button>
+              </Card.Body>
+            </Card>
           </Col>
         ))}
       </Row>
@@ -158,7 +174,7 @@ const RecipeList = ({ recipes, loading = false }) => {
           Nächste
         </Button>
       </div>
-    </div>
+    </Container>
   );
 };
 

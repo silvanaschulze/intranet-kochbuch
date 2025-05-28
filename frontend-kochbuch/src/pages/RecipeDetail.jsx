@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Button, Modal, Alert, Spinner } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getRecipe, deleteRecipe } from '../services/recipeService';
+import { getRecipe, deleteRecipe } from '../services/recipeService.jsx';
 import { useAuth } from '../context/AuthContext';
 
 /**

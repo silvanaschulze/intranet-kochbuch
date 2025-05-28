@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Form, Button, Alert, Pagination } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { getRecipes, searchRecipes } from '../services/recipeService';
+import { getRecipes, searchRecipes } from '../services/recipeService.jsx';
 import RecipeList from '../components/Recipe/RecipeList';
 
 /**

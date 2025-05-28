@@ -6,7 +6,7 @@
 import React from 'react';
 import { Container } from 'react-bootstrap';
 import RecipeForm from '../components/Recipe/RecipeForm';
-import { createRecipe } from '../services/recipeService';
+import { createRecipe } from '../services/recipeService.jsx';
 import { useNavigate } from 'react-router-dom';
 
 /**

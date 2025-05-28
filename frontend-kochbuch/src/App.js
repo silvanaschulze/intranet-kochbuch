@@ -5,15 +5,22 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Container } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import Layout from './components/Layout/Layout';
 import { AuthProvider } from './context/AuthContext';
 
-// Seitenkomponenten importieren
-import HomePage from './pages/Home';
+// Layout Components
+import Navigation from './components/Layout/Navigation';
+import Footer from './components/Layout/Footer';
+
+// Auth Components
+import PrivateRoute from './components/Auth/PrivateRoute';
+
+// Pages
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import RecipeListPage from './pages/RecipeListPage';
+import RecipeList from './pages/RecipeListPage';
 import RecipeDetail from './pages/RecipeDetail';
 import CreateRecipe from './pages/CreateRecipe';
 import Profile from './pages/Profile';
@@ -27,21 +34,51 @@ import MyRecipes from './pages/MyRecipes';
 function App() {
   return (
     <Router>
-    <AuthProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/rezepte" element={<RecipeListPage />} />
-            <Route path="/rezepte/:id" element={<RecipeDetail />} />
-            <Route path="/rezept-erstellen" element={<CreateRecipe />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profil" element={<Profile />} />
-            <Route path="/meine-rezepte" element={<MyRecipes />} />
-          </Routes>
-        </Layout>
+      <AuthProvider>
+        <div className="d-flex flex-column min-vh-100">
+          <Navigation />
+          
+          <Container className="flex-grow-1 py-4">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/rezepte" element={<RecipeList />} />
+              <Route path="/rezepte/:id" element={<RecipeDetail />} />
+              
+              {/* Protected Routes */}
+              <Route
+                path="/rezept-erstellen"
+                element={
+                  <PrivateRoute>
+                    <CreateRecipe />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/profil"
+                element={
+                  <PrivateRoute>
+                    <Profile />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/meine-rezepte"
+                element={
+                  <PrivateRoute>
+                    <MyRecipes />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </Container>
+
+          <Footer />
+        </div>
       </AuthProvider>
-  </Router>
+    </Router>
   );
 }
 

@@ -3,7 +3,22 @@
  * @module recipeService
  */
 
-import api from './api';
+import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// Configuração do axios com interceptor para token
+const api = axios.create({
+  baseURL: API_URL
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 /**
  * @typedef {Object} Zutat
@@ -72,26 +87,23 @@ export const createRecipe = async (recipeData) => {
   try {
     const formData = new FormData();
     
-    // Textfelder hinzufügen
-    formData.append('titel', recipeData.titel);
-    formData.append('zubereitung', recipeData.zubereitung);
-    formData.append('zubereitungszeit', recipeData.zubereitungszeit);
-    formData.append('schwierigkeitsgrad', recipeData.schwierigkeitsgrad);
-    
-    // Zutaten als JSON-String hinzufügen
-    formData.append('zutaten', JSON.stringify(recipeData.zutaten));
-    
-    // Bild hinzufügen, falls vorhanden
-    if (recipeData.bild) {
-      formData.append('bild', recipeData.bild);
-    }
-    
-    const response = await api.post('/api/rezepte', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+    // Adicionar dados básicos
+    Object.keys(recipeData).forEach(key => {
+      if (key !== 'image') {
+        formData.append(key, recipeData[key]);
       }
     });
-    
+
+    // Adicionar imagem se existir
+    if (recipeData.image) {
+      formData.append('image', recipeData.image);
+    }
+
+    const response = await api.post('/api/rezepte', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     throw error;
@@ -109,22 +121,23 @@ export const updateRecipe = async (id, recipeData) => {
   try {
     const formData = new FormData();
     
-    formData.append('titel', recipeData.titel);
-    formData.append('zubereitung', recipeData.zubereitung);
-    formData.append('zubereitungszeit', recipeData.zubereitungszeit);
-    formData.append('schwierigkeitsgrad', recipeData.schwierigkeitsgrad);
-    formData.append('zutaten', JSON.stringify(recipeData.zutaten));
-    
-    if (recipeData.bild) {
-      formData.append('bild', recipeData.bild);
-    }
-    
-    const response = await api.put(`/api/rezepte/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
+    // Adicionar dados básicos
+    Object.keys(recipeData).forEach(key => {
+      if (key !== 'image') {
+        formData.append(key, recipeData[key]);
       }
     });
-    
+
+    // Adicionar imagem se existir
+    if (recipeData.image) {
+      formData.append('image', recipeData.image);
+    }
+
+    const response = await api.put(`/api/rezepte/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   } catch (error) {
     throw error;
@@ -174,3 +187,67 @@ export const getUserRecipes = async () => {
     throw error;
   }
 };
+
+const recipeService = {
+  // Buscar todas as receitas
+  getAllRecipes: async (page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/recipes?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Buscar uma receita específica
+  getRecipeById: async (id) => {
+    try {
+      const response = await api.get(`/recipes/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Buscar receitas por categoria
+  getRecipesByCategory: async (category, page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/recipes/category/${category}?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Buscar receitas por termo de busca
+  searchRecipes: async (searchTerm, page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/recipes/search?q=${searchTerm}&page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Favoritar/desfavoritar uma receita
+  toggleFavorite: async (recipeId) => {
+    try {
+      const response = await api.post(`/recipes/${recipeId}/favorite`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Buscar receitas favoritas do usuário
+  getFavoriteRecipes: async (page = 1, limit = 10) => {
+    try {
+      const response = await api.get(`/recipes/favorites?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+};
+
+export default recipeService;
