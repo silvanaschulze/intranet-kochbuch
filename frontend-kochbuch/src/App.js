@@ -15,9 +15,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import RecipeListPage from './pages/RecipeListPage';
 import RecipeDetail from './pages/RecipeDetail';
-import CreateRecipes from './pages/CreateRecipes';
+import CreateRecipe from './pages/CreateRecipe';
 import Profile from './pages/Profile';
-import MyRecipes from './components/Recipe/MyRecipes';
+import MyRecipes from './pages/MyRecipes';
 
 /**
  * Hauptkomponente der Anwendung
@@ -27,13 +27,13 @@ import MyRecipes from './components/Recipe/MyRecipes';
 function App() {
   return (
     <Router>
-      <AuthProvider>
+    <AuthProvider>
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/rezepte" element={<RecipeListPage />} />
             <Route path="/rezepte/:id" element={<RecipeDetail />} />
-            <Route path="/rezept-erstellen" element={<CreateRecipes />} />
+            <Route path="/rezept-erstellen" element={<CreateRecipe />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profil" element={<Profile />} />
@@ -41,7 +41,7 @@ function App() {
           </Routes>
         </Layout>
       </AuthProvider>
-    </Router>
+  </Router>
   );
 }
 

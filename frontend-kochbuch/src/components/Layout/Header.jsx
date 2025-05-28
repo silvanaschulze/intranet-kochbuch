@@ -3,8 +3,8 @@
  * @component Header
  */
 
-import React, { useContext, useEffect } from 'react';
-import { Navbar, Container, Nav, NavDropdown, Button } from 'react-bootstrap';
+import React, { useEffect } from 'react';
+import { Navbar, Container, Nav, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 

@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
         logout();
       }
     }
-  }, []);
+   }, [logout]);
 
   /**
    * Führt den Login-Prozess durch

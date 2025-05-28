@@ -30,7 +30,7 @@ const RecipeDetailPage = () => {
    */
   useEffect(() => {
     loadRecipeDetails();
-  }, [id]);
+   }, [id, loadRecipeDetails]);
 
   /**
    * Lädt die Details eines spezifischen Rezepts

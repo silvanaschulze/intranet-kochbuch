@@ -6,12 +6,19 @@ Dieses Modul implementiert die API-Endpunkte für Benutzerverwaltung:
 - Registrierung
 - Anmeldung
 - Profilzugriff
+- Token-Refresh
+- Logout
 """
 
 from flask import Blueprint, request, jsonify
 from models.user import benutzer_registrieren, benutzer_anmelden
 from utils.validators import email_validieren, passwort_validieren
-from utils.token import token_generieren, token_erforderlich
+from utils.token import (
+    generate_tokens, 
+    token_erforderlich, 
+    token_blacklisten,
+    token_verifizieren
+)
 
 benutzer_bp = Blueprint('benutzer', __name__)
 
@@ -67,7 +74,8 @@ def login():
     
     @return {Object} response
     @return {string} response.nachricht - Erfolgsmeldung
-    @return {string} response.token - JWT-Token bei erfolgreicher Anmeldung
+    @return {string} response.access_token - JWT Access Token
+    @return {string} response.refresh_token - JWT Refresh Token
     @return {Object} response.benutzer - Benutzerdaten
     @return {string} [response.fehler] - Fehlermeldung bei Misserfolg
     
@@ -90,14 +98,68 @@ def login():
             'name': benutzer['name'],
             'email': benutzer['email']
         }
-        token = token_generieren(benutzer['id'], benutzer['email'])
+        access_token, refresh_token = generate_tokens(benutzer['id'], benutzer['email'])
         return jsonify({
             "nachricht": "Login erfolgreich", 
-            "token": token,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
             "benutzer": benutzer_daten
         }), 200
     else:
         return jsonify({"fehler": "Ungültige E-Mail oder Passwort."}), 401
+
+@benutzer_bp.route("/refresh", methods=["POST"])
+def refresh():
+    """
+    Endpunkt zum Erneuern des Access Tokens mittels Refresh Token.
+    
+    @route POST /api/benutzer/refresh
+    
+    @body {Object} request_body
+    @body {string} request_body.refresh_token - Gültiger Refresh Token
+    
+    @return {Object} response
+    @return {string} response.access_token - Neuer Access Token
+    @return {string} [response.fehler] - Fehlermeldung bei Misserfolg
+    
+    @throws {401} - Bei ungültigem Refresh Token
+    """
+    refresh_token = request.json.get('refresh_token')
+    if not refresh_token:
+        return jsonify({"fehler": "Refresh Token erforderlich"}), 401
+
+    token_data = token_verifizieren(refresh_token)
+    if not token_data or token_data.get('type') != 'refresh':
+        return jsonify({"fehler": "Ungültiger Refresh Token"}), 401
+
+    # Gerar novo access token
+    access_token, _ = generate_tokens(token_data['benutzer_id'], token_data['email'])
+    
+    return jsonify({
+        "access_token": access_token
+    }), 200
+
+@benutzer_bp.route("/logout", methods=["POST"])
+@token_erforderlich
+def logout(token_daten):
+    """
+    Endpunkt für das Ausloggen eines Benutzers.
+    
+    @route POST /api/benutzer/logout
+    
+    @auth Erfordert gültigen JWT-Token
+    
+    @return {Object} response
+    @return {string} response.nachricht - Erfolgsmeldung
+    
+    @throws {401} - Bei fehlendem oder ungültigem Token
+    """
+    token = request.headers.get('Authorization').split(' ')[1]
+    token_blacklisten(token)
+    
+    return jsonify({
+        "nachricht": "Erfolgreich ausgeloggt"
+    }), 200
 
 @benutzer_bp.route("/profil", methods=["GET"])
 @token_erforderlich

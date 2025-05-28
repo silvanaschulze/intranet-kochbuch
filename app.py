@@ -16,22 +16,16 @@ from routes.rezept_routes import rezept_bp
 
 app = Flask(__name__)
 
-# Configuração CORS mais específica
+# Configuração da chave secreta para JWT
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'seu-secret-key-seguro')  # Em produção, use variável de ambiente
+
+# Configuração CORS mais segura
 CORS(app, resources={
     r"/api/*": {
-        "origins": [
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:5173",
-            "http://192.168.64.1:3000",
-            "http://192.168.64.1:5173",
-            "http://192.168.64.3:3000",
-            "http://192.168.64.3:5173"
-        ],
+        "origins": ["http://localhost:3000"],  # Frontend React
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
-        "expose_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Range", "X-Content-Range"],
         "supports_credentials": True
     }
 })
@@ -54,3 +48,4 @@ def home():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
+

@@ -6,9 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Alert, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { getUserRecipes } from '../../services/recipeService';
-import RecipeList from './RecipeList';
+import RecipeList from '../components/Recipe/RecipeList';
 
 /**
  * MyRecipesPage Komponente
@@ -17,7 +16,6 @@ import RecipeList from './RecipeList';
  */
 const MyRecipesPage = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

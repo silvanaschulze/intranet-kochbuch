@@ -53,7 +53,7 @@ const RecipeList = ({ recipes, loading = false }) => {
   // Laden der Rezepte beim ersten Render und bei Änderungen der Suchparameter
   useEffect(() => {
     loadRecipes();
-  }, [page, searchTerm, category]);
+  }, [page, searchTerm, category, loadRecipes]);
 
   // Handler für die Suche
   const handleSearch = (e) => {

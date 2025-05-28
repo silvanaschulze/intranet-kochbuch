@@ -13,20 +13,24 @@ Dieses Modul implementiert die API-Endpunkte für Rezeptverwaltung:
 import os
 import uuid
 import imghdr
-from flask import Blueprint, request, jsonify
+from PIL import Image
+from flask import Blueprint, request, jsonify, current_app, send_from_directory
 from werkzeug.utils import secure_filename
 from models.rezept import (rezept_erstellen, rezept_abrufen, rezepte_auflisten,
                           rezept_aktualisieren, rezept_loeschen, rezepte_suchen)
-from utils.token import token_erforderlich
+from utils.token import token_erforderlich as token_required
 import json
 
 # Blueprint für Rezepte erstellen
 rezept_bp = Blueprint('rezept', __name__)
 
 # Definir explicitamente as extensões permitidas
-ERLAUBTE_ERWEITERUNGEN = {'png', 'jpg', 'jpeg', 'gif'}
+ERLAUBTE_ERWEITERUNGEN = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 # Definir tamanho máximo de arquivo (5 MB)
 MAX_BILD_GROESSE_MB = 5
+# Definir dimensões máximas da imagem
+MAX_IMAGE_SIZE = (1920, 1080)  # Full HD
+THUMB_SIZE = (300, 200)  # Thumbnail
 
 def datei_erlaubt(dateiname):
     """
@@ -51,16 +55,50 @@ def ist_bild(file_stream):
         file_stream.seek(0)  # Zurück zum Anfang
         
         # Überprüfen Sie den Dateiheader auf gängige Bildformate
-        return bool(imghdr.what(None, header))
+        format = imghdr.what(None, header)
+        return format in ERLAUBTE_ERWEITERUNGEN
     except Exception:
         return False
+
+def optimize_image(image_path, max_size):
+    """
+    Otimiza uma imagem redimensionando-a e comprimindo-a.
+    
+    @param {string} image_path - Caminho da imagem
+    @param {tuple} max_size - Tamanho máximo (largura, altura)
+    @return {Image} Imagem otimizada
+    """
+    with Image.open(image_path) as img:
+        # Converter para RGB se necessário
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Redimensionar mantendo proporção se maior que max_size
+        if img.size[0] > max_size[0] or img.size[1] > max_size[1]:
+            img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        return img
+
+def create_thumbnail(image_path, thumb_path, size):
+    """
+    Cria uma miniatura da imagem.
+    
+    @param {string} image_path - Caminho da imagem original
+    @param {string} thumb_path - Caminho para salvar a miniatura
+    @param {tuple} size - Tamanho da miniatura (largura, altura)
+    """
+    with Image.open(image_path) as img:
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        img.thumbnail(size, Image.Resampling.LANCZOS)
+        img.save(thumb_path, 'JPEG', quality=85, optimize=True)
 
 def bild_speichern(bild):
     """
     Speichert ein hochgeladenes Bild sicher ab.
     
     @param {FileStorage} bild - Das hochgeladene Bild
-    @return {string|None} Der Pfad zum gespeicherten Bild oder None bei Fehler
+    @return {dict|None} Dictionary mit Bildpfaden oder None bei Fehler
     """
     if not bild or not bild.filename:
         return None
@@ -71,20 +109,55 @@ def bild_speichern(bild):
     try:
         # Sicheren Dateinamen erstellen
         dateiname = secure_filename(bild.filename)
-        # Eindeutigen Dateinamen generieren
-        eindeutiger_dateiname = f"{uuid.uuid4()}_{dateiname}"
-        # Pfad zum Speichern
-        upload_ordner = os.path.join('static', 'uploads')
-        # Sicherstellen, dass der Ordner existiert
+        base_name = str(uuid.uuid4())
+        extension = dateiname.rsplit('.', 1)[1].lower()
+        
+        # Pfade definieren
+        upload_ordner = os.path.join(current_app.static_folder, 'uploads')
         os.makedirs(upload_ordner, exist_ok=True)
-        # Vollständiger Pfad
-        pfad = os.path.join(upload_ordner, eindeutiger_dateiname)
-        # Bild speichern
-        bild.save(pfad)
-        return pfad
+        
+        # Pfade für original, otimizado e thumbnail
+        original_name = f"{base_name}_original.{extension}"
+        optimized_name = f"{base_name}.{extension}"
+        thumb_name = f"{base_name}_thumb.jpg"
+        
+        original_path = os.path.join(upload_ordner, original_name)
+        optimized_path = os.path.join(upload_ordner, optimized_name)
+        thumb_path = os.path.join(upload_ordner, thumb_name)
+        
+        # Salvar original
+        bild.save(original_path)
+        
+        # Otimizar e salvar
+        optimized_img = optimize_image(original_path, MAX_IMAGE_SIZE)
+        optimized_img.save(optimized_path, quality=85, optimize=True)
+        
+        # Criar e salvar thumbnail
+        create_thumbnail(original_path, thumb_path, THUMB_SIZE)
+        
+        # Remover original após processamento
+        os.remove(original_path)
+        
+        return {
+            'image_url': f"static/uploads/{optimized_name}",
+            'thumb_url': f"static/uploads/{thumb_name}"
+        }
     except Exception as e:
         print(f"Fehler beim Speichern des Bildes: {e}")
         return None
+
+# Rota para servir imagens estáticas
+@rezept_bp.route('/uploads/<path:filename>')
+def serve_image(filename):
+    """
+    Serve imagens estáticas do diretório de uploads.
+    
+    @route GET /api/rezepte/uploads/{filename}
+    
+    @param {string} filename - Nome do arquivo
+    @return {Response} Arquivo de imagem
+    """
+    return send_from_directory(current_app.static_folder + '/uploads', filename)
 
 @rezept_bp.route('', methods=['GET'])
 def rezepte_liste():
@@ -160,7 +233,7 @@ def rezept_details(rezept_id):
         return jsonify({'fehler': 'Interner Serverfehler'}), 500
 
 @rezept_bp.route('', methods=['POST'])
-@token_erforderlich
+@token_required
 def rezept_erstellen_route(token_daten):
     """
     Erstellt ein neues Rezept.
@@ -254,7 +327,7 @@ def rezept_erstellen_route(token_daten):
         return jsonify({'fehler': 'Interner Serverfehler'}), 500
 
 @rezept_bp.route('/<int:rezept_id>', methods=['PUT'])
-@token_erforderlich
+@token_required
 def rezept_aktualisieren_route(token_daten, rezept_id):
     """
     Aktualisiert ein bestehendes Rezept.
@@ -348,7 +421,7 @@ def rezept_aktualisieren_route(token_daten, rezept_id):
         return jsonify({'fehler': 'Interner Serverfehler'}), 500
 
 @rezept_bp.route('/<int:rezept_id>', methods=['DELETE'])
-@token_erforderlich
+@token_required
 def rezept_loeschen_route(token_daten, rezept_id):
     """
     Löscht ein bestehendes Rezept.
